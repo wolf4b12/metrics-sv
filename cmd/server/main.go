@@ -9,7 +9,7 @@ import (
 
 func main() {
     storage := storage.NewMemStorage()
-    mux := http.NewServeMux()
+    mux := http.NewServeMux() // создаем новый мультиплексор
     
     // Инициализация маршрутов
     mux.Handle("/update/", handler.UpdateHandler(storage))
