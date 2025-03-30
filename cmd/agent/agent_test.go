@@ -5,6 +5,23 @@ import (
 	"testing"
 )
 
+func TestCollectMetrics(t *testing.T) {
+	type args struct {
+		metrics *Metrics
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			CollectMetrics(tt.args.metrics)
+		})
+	}
+}
+
 func TestSendMetric(t *testing.T) {
 	type args struct {
 		client        *http.Client
@@ -61,6 +78,19 @@ func TestRunAgent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			RunAgent(tt.args.cfg)
+		})
+	}
+}
+
+func Test_main(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			main()
 		})
 	}
 }
