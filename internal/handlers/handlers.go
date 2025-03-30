@@ -83,7 +83,7 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
             fmt.Fprintf(w, "Metric not found: %s/%s", metricType, metricName)
             return
         } else if err != nil {
-            w.WriteHeader(http.StatusInternalServerError)
+            w.WriteHeader(http.StatusNotFound)
             fmt.Fprintf(w, "Error getting metric: %s/%s", metricType, metricName)
             return
         }
