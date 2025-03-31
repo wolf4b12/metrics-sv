@@ -38,10 +38,12 @@ func main() {
     router.Get("/", handler.ListMetricsHandler(storage))
 
     server := &http.Server{
-        Addr:    "localhost:8080",
+        Addr:    addr,
         Handler: router,
     }
 
-    log.Printf("Starting server on http://localhost:8080\n")
-    log.Fatal(server.ListenAndServe())
+    log.Printf("Starting server on %s\n", addr)
+    if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+        log.Fatalf("Ошибка запуска сервера: %v", err)
+    }
 }
