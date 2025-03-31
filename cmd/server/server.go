@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "flag"
     "net/http"
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
@@ -11,6 +12,15 @@ import (
 
 func main() {
     storage := storage.NewMemStorage()
+
+
+    // Добавляем флаг для указания адреса HTTP-сервера
+    var addr string
+    flag.StringVar(&addr, "a", "localhost:8080", "HTTP серверный адрес (по умолчанию localhost:8080)")
+    flag.Parse()
+
+
+
 
     // Создание нового роутера с использованием chi
     router := chi.NewRouter()

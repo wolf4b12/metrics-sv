@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"flag"
 	"log"
 	"math/rand"
 	"net/http"
@@ -116,12 +117,29 @@ func RunAgent(cfg Config) {
 }
 
 func main() {
-	cfg := Config{
-		PollInterval:   2 * time.Second,
-		ReportInterval: 10 * time.Second,
-		ServerAddress:  "http://localhost:8080",
-	}
+    // Обработка флагов
+    var (
+        addr          string
+        reportSeconds int	
+		pollSeconds   int
+    )
 
-	log.Println("Starting agent...")
-	RunAgent(cfg) // Запуск агента
+    flag.StringVar(&addr, "a", "localhost:8080", "Адрес HTTP-сервера (по умолчанию localhost:8080)")
+    flag.IntVar(&reportSeconds, "r", 10, "Интервал отправки метрик на сервер в секундах (по умолчанию 10 секунд)")
+    flag.IntVar(&pollSeconds, "p", 2, "Интервал опроса метрик в секундах (по умолчанию 2 секунды)")
+    flag.Parse()
+
+    // Конвертация значений флагов в нужные типы
+    reportInterval := time.Duration(reportSeconds) * time.Second
+    pollInterval := time.Duration(pollSeconds) * time.Second
+
+    // Конфигурация для агента
+    cfg := Config{
+        PollInterval:   pollInterval,
+        ReportInterval: reportInterval,
+        ServerAddress:  addr,
+    }
+
+    log.Println("Starting agent...")
+    RunAgent(cfg) // Запуск агента
 }
