@@ -94,8 +94,8 @@ func RunAgent(cfg Config) {
 func parseFlags() Config {
 	var (
 		serverAddress  = flag.String("a", "http://localhost:8080", "HTTP server address")
-		reportInterval = flag.String("r", "20", "Report interval in seconds")
-		pollInterval   = flag.String("p", "20", "Poll interval in seconds")
+		reportInterval = flag.String("r", "1", "Report interval in seconds")
+		pollInterval   = flag.String("p", "1", "Poll interval in seconds")
 	)
 
 	flag.Parse()
