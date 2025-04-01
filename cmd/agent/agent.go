@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -116,10 +117,19 @@ func RunAgent(cfg Config) {
 }
 
 func main() {
+	// Определение флагов
+	addr := flag.String("a", "http://localhost:8080", "адрес эндпоинта HTTP-сервера")
+	pollInterval := flag.Duration("p", 2*time.Second, "частота опроса метрик из runtime")
+	reportInterval := flag.Duration("r", 10*time.Second, "частота отправки метрик на сервер")
+
+	// Парсинг флагов
+	flag.Parse()
+
+	// Создание конфигурации агента
 	cfg := Config{
-		PollInterval:   2 * time.Second,
-		ReportInterval: 10 * time.Second,
-		ServerAddress:  "http://localhost:8080",
+		PollInterval:   *pollInterval,
+		ReportInterval: *reportInterval,
+		ServerAddress:  *addr,
 	}
 
 	log.Println("Starting agent...")

@@ -1,6 +1,7 @@
 package main
 
 import (
+    "flag"
     "log"
     "net/http"
     "github.com/go-chi/chi/v5"
@@ -10,12 +11,18 @@ import (
 )
 
 func main() {
+    // Определение флага для адреса сервера
+    addr := flag.String("a", "localhost:8080", "адрес эндпоинта HTTP-сервера")
+
+    // Парсинг флагов
+    flag.Parse()
+
     storage := storage.NewMemStorage()
 
     // Создание нового роутера с использованием chi
     router := chi.NewRouter()
 
-    // Настройка middleware для журналирования  запросов
+    // Настройка middleware для журналирования запросов
     router.Use(middleware.Logger)
 
     // Маршрут для обновления метрик
@@ -28,10 +35,10 @@ func main() {
     router.Get("/", handler.ListMetricsHandler(storage))
 
     server := &http.Server{
-        Addr:    "localhost:8080",
+        Addr:    *addr,
         Handler: router,
     }
 
-    log.Printf("Starting server on http://localhost:8080\n")
+    log.Printf("Starting server on http://%s\n", *addr)
     log.Fatal(server.ListenAndServe())
 }
