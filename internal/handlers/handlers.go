@@ -68,7 +68,7 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
         var err error
 
         switch metricType {
-
+            
         case "gauge":
             value, err = storage.GetGauge(metricName)
             if err == nil {
@@ -86,7 +86,12 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
                 return
             }
             
-          
+            
+
+        default:
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Fprintf(w, "Unknown metric type: %s", metricType)
+            return
         }
 
 
