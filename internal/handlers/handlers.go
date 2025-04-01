@@ -66,13 +66,13 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
         metricName := chi.URLParam(r, "metricName")
 
         var value interface{}
-        var err error
+//        var err error
 
         switch metricType {
         case "gauge":
-            value, err = storage.GetGauge(metricName)
+            value, _ = storage.GetGauge(metricName)
         case "counter":
-            value, err = storage.GetCounter(metricName)
+            value, _ = storage.GetCounter(metricName)
         default:
             w.WriteHeader(http.StatusNotFound)
             fmt.Fprintf(w, "Unknown metric type: %s", metricType)
@@ -80,13 +80,7 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
         }
 
         // Обрабатываем ошибки
-        if err != nil {
-  {
-                w.WriteHeader(http.StatusNotFound)
-                fmt.Fprint(w, "MetricNotFound")
-            }
-            return
-        }
+
 
         w.WriteHeader(http.StatusOK)
         fmt.Fprintln(w, value)

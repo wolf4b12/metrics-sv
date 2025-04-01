@@ -1,7 +1,6 @@
 package storage
 
 import (
-    "fmt"
     "sync"
 )
 
@@ -23,9 +22,7 @@ type MemStorage struct {
 }
 
 // ErrMetricNotFound реализация метода ErrMetricNotFound для MemStorage
-func (s *MemStorage) ErrMetricNotFound() error {
-    return fmt.Errorf("metric not found")
-}
+
 
 // NewMemStorage конструктор хранилища
 func NewMemStorage() *MemStorage {
@@ -53,10 +50,7 @@ func (s *MemStorage) UpdateCounter(name string, value int64) {
 func (s *MemStorage) GetGauge(name string) (float64, error) {
     s.mu.RLock()
     defer s.mu.RUnlock()
-    value, ok := s.gauges[name]
-    if !ok {
-        return 0, s.ErrMetricNotFound() // Использование метода ErrMetricNotFound
-    }
+    value, _ := s.gauges[name]
     return value, nil
 }
 
@@ -64,10 +58,7 @@ func (s *MemStorage) GetGauge(name string) (float64, error) {
 func (s *MemStorage) GetCounter(name string) (int64, error) {
     s.mu.RLock()
     defer s.mu.RUnlock()
-    value, ok := s.counters[name]
-    if !ok {
-        return 0, s.ErrMetricNotFound() // Использование метода ErrMetricNotFound
-    }
+    value, _ := s.counters[name]
     return value, nil
 }
 
