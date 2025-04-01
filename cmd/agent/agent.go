@@ -7,32 +7,29 @@ import (
 	"math/rand"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync/atomic"
 	"time"
 )
 
-// Metrics содержит метрики, которые собирает агент
 type Metrics struct {
-	PollCount   int64         // Counter, увеличивается при каждом обновлении метрик
-	RandomValue float64       // Gauge, случайное значение
-	MemStats    runtime.MemStats // Метрики из runtime
+	PollCount   int64
+	RandomValue float64
+	MemStats    runtime.MemStats
 }
 
-// Config содержит конфигурацию агента
 type Config struct {
-	PollInterval   time.Duration // Интервал обновления метрик
-	ReportInterval time.Duration // Интервал отправки метрик на сервер
-	ServerAddress  string        // Адрес сервера для отправки метрик
+	PollInterval   time.Duration
+	ReportInterval time.Duration
+	ServerAddress  string
 }
 
-// CollectMetrics собирает метрики из runtime и обновляет кастомные метрики
 func CollectMetrics(metrics *Metrics) {
 	atomic.AddInt64(&metrics.PollCount, 1)
 	metrics.RandomValue = rand.Float64()
 	runtime.ReadMemStats(&metrics.MemStats)
 }
 
-// SendMetric отправляет одну метрику на сервер по HTTP
 func SendMetric(client *http.Client, serverAddress, metricType, metricName string, value interface{}) error {
 	url := fmt.Sprintf("%s/update/%s/%s/%v", serverAddress, metricType, metricName, value)
 	req, err := http.NewRequest(http.MethodPost, url, nil)
@@ -53,13 +50,12 @@ func SendMetric(client *http.Client, serverAddress, metricType, metricName strin
 	return nil
 }
 
-// SendAllMetrics отправляет все собранные метрики на сервер
 func SendAllMetrics(client *http.Client, serverAddress string, metrics *Metrics) {
-	// Отправка кастомных метрик
+	// Кастомные метрики
 	SendMetric(client, serverAddress, "counter", "PollCount", atomic.LoadInt64(&metrics.PollCount))
 	SendMetric(client, serverAddress, "gauge", "RandomValue", metrics.RandomValue)
 
-	// Отправка метрик из runtime.MemStats
+	// Метрики runtime
 	memStats := metrics.MemStats
 	SendMetric(client, serverAddress, "gauge", "Alloc", memStats.Alloc)
 	SendMetric(client, serverAddress, "gauge", "BuckHashSys", memStats.BuckHashSys)
@@ -92,13 +88,12 @@ func SendAllMetrics(client *http.Client, serverAddress string, metrics *Metrics)
 	log.Println("Metrics sent successfully")
 }
 
-// RunAgent запускает агент для сбора и отправки метрик с заданными интервалами
 func RunAgent(cfg Config) {
 	client := &http.Client{Timeout: 5 * time.Second}
 	var metrics Metrics
 
-	tickerPoll := time.NewTicker(cfg.PollInterval)   // Таймер для обновления метрик
-	tickerReport := time.NewTicker(cfg.ReportInterval) // Таймер для отправки метрик
+	tickerPoll := time.NewTicker(cfg.PollInterval)
+	tickerReport := time.NewTicker(cfg.ReportInterval)
 
 	for {
 		select {
@@ -108,30 +103,44 @@ func RunAgent(cfg Config) {
 
 		case <-tickerReport.C:
 			log.Println("Sending metrics...")
-			go SendAllMetrics(client, cfg.ServerAddress, &metrics) // Отправка в отдельной горутине
-
-			// Сброс счетчика PollCount после отправки
+			go SendAllMetrics(client, cfg.ServerAddress, &metrics)
 			atomic.StoreInt64(&metrics.PollCount, 0)
 		}
 	}
 }
 
-func main() {
-	// Определение флагов
-	addr := flag.String("a", "http://localhost:8080", "адрес эндпоинта HTTP-сервера")
-	pollInterval := flag.Duration("p", 2*time.Second, "частота опроса метрик из runtime")
-	reportInterval := flag.Duration("r", 10*time.Second, "частота отправки метрик на сервер")
+func parseDuration(durationStr string) (time.Duration, error) {
+	if !strings.HasSuffix(durationStr, "s") && 
+	   !strings.HasSuffix(durationStr, "m") && 
+	   !strings.HasSuffix(durationStr, "h") {
+		durationStr += "s"
+	}
+	return time.ParseDuration(durationStr)
+}
 
-	// Парсинг флагов
+func main() {
+	addr := flag.String("a", "http://localhost:8080", "Server address")
+	pollStr := flag.String("p", "2", "Poll interval (seconds)")
+	reportStr := flag.String("r", "10", "Report interval (seconds)")
+
 	flag.Parse()
 
-	// Создание конфигурации агента
+	pollInterval, err := parseDuration(*pollStr)
+	if err != nil {
+		log.Fatalf("Invalid poll interval: %v", err)
+	}
+
+	reportInterval, err := parseDuration(*reportStr)
+	if err != nil {
+		log.Fatalf("Invalid report interval: %v", err)
+	}
+
 	cfg := Config{
-		PollInterval:   *pollInterval,
-		ReportInterval: *reportInterval,
+		PollInterval:   pollInterval,
+		ReportInterval: reportInterval,
 		ServerAddress:  *addr,
 	}
 
 	log.Println("Starting agent...")
-	RunAgent(cfg) // Запуск агента
+	RunAgent(cfg)
 }
