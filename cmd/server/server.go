@@ -4,6 +4,8 @@ import (
     "flag"
     "log"
     "net/http"
+    "os"
+
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
     "github.com/wolf4b12/metrics-sv.git/internal/storage"
@@ -17,6 +19,11 @@ func main() {
     // Парсинг флагов
     flag.Parse()
 
+    // Проверка наличия неизвестных флагов
+    if flag.NArg() > 0 {
+        log.Fatalf("Неизвестный флаг: %s\n", os.Args[flag.NArg()-1])
+    }
+
     storage := storage.NewMemStorage()
 
     // Создание нового роутера с использованием chi
@@ -25,13 +32,9 @@ func main() {
     // Настройка middleware для журналирования запросов
     router.Use(middleware.Logger)
 
-    // Маршрут для обновления метрик
+    // Маршруты для обработки запросов
     router.Post("/update/{metricType}/{metricName}/{metricValue}", handler.UpdateHandler(storage))
-
-    // Маршрут для получения конкретной метрики
     router.Get("/value/{metricType}/{metricName}", handler.ValueHandler(storage))
-
-    // Маршрут для получения списка всех метрик
     router.Get("/", handler.ListMetricsHandler(storage))
 
     server := &http.Server{
@@ -39,6 +42,6 @@ func main() {
         Handler: router,
     }
 
-    log.Printf("Starting server on http://%s\n", *addr)
+    log.Printf("Запуск сервера на http://%s\n", *addr)
     log.Fatal(server.ListenAndServe())
 }
