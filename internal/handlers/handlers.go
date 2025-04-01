@@ -74,7 +74,7 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
         case "counter":
             value, err = storage.GetCounter(metricName)
         default:
-            w.WriteHeader(http.StatusBadRequest)
+            w.WriteHeader(http.StatusNotFound)
             fmt.Fprintf(w, "Unknown metric type: %s", metricType)
             return
         }
