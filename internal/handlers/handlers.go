@@ -15,46 +15,46 @@ import (
 
 
 // UpdateHandler — обработчик для обновления метрик
-func UpdateHandler(storage storage.Storage) http.HandlerFunc { // UpdateHandler создает новый HTTP HandlerFunc с использованием Storage
-    return func(w http.ResponseWriter, r *http.Request) { // Возвращаемый handlerFunc получает writer и request
-        w.Header().Set("Content-Type", "text/plain; charset=utf-8") // Устанавливаем заголовок Content-Type для правильного рендеринга текста
-
-        if r.Method != http.MethodPost { // Проверяем, является ли метод запроса POST
-            w.WriteHeader(http.StatusMethodNotAllowed) // Если метод не POST, возвращаем ошибку 405 Method Not Allowed
+func UpdateHandler(storage storage.Storage) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+        
+        if r.Method != http.MethodPost {
+            w.WriteHeader(http.StatusMethodNotAllowed)
             return
         }
 
-        pathParts := strings.Split(r.URL.Path, "/")[2:] // Разбиваем URL по слэшам и берем последние три сегмента
-        if len(pathParts) != 3 { // Проверяем, что количество сегментов равно трем
-            w.WriteHeader(http.StatusNotFound) // Если сегментов меньше трех, возвращаем ошибку 404 Not Found
+        pathParts := strings.Split(r.URL.Path, "/")[2:]
+        if len(pathParts) != 3 {
+            w.WriteHeader(http.StatusNotFound)
             return
         }
 
-        metricType, metricName, metricValue := pathParts[0], pathParts[1], pathParts[2] // Извлекаем тип метрики, название и значение
+        metricType, metricName, metricValue := pathParts[0], pathParts[1], pathParts[2]
 
-        switch metricType { // Анализируем тип метрики
-        case "gauge": // Если тип metriсType равен "gauge"
-            value, err := strconv.ParseFloat(metricValue, 64) // Преобразуем строковое значение в число с плавающей точкой
-            if err != nil { // Если произошла ошибка при преобразовании
-                w.WriteHeader(http.StatusBadRequest) // Возвращаем ошибку 400 Bad Request
+        switch metricType {
+        case "gauge":
+            value, err := strconv.ParseFloat(metricValue, 64)
+            if err != nil {
+                w.WriteHeader(http.StatusBadRequest)
                 return
             }
-            storage.UpdateGauge(metricName, value) // Обновляем gauge метрику
+            storage.UpdateGauge(metricName, value)
 
-        case "counter": // Если тип metriсType равен "counter"
-            value, err := strconv.ParseInt(metricValue, 10, 64) // Преобразуем строковое значение в целое число
-            if err != nil { // Если произошла ошибка при преобразовании
-                w.WriteHeader(http.StatusBadRequest) // Возвращаем ошибку 400 Bad Request
+        case "counter":
+            value, err := strconv.ParseInt(metricValue, 10, 64)
+            if err != nil {
+                w.WriteHeader(http.StatusBadRequest)
                 return
             }
-            storage.UpdateCounter(metricName, value) // Обновляем counter метрику
+            storage.UpdateCounter(metricName, value)
 
-        default: // Если тип метрики не совпадает ни с одним известным типом
-            w.WriteHeader(http.StatusBadRequest) // Возвращаем ошибку 400 Bad Request
+        default:
+            w.WriteHeader(http.StatusBadRequest)
             return
         }
 
-        w.WriteHeader(http.StatusOK) // Все прошло успешно, возвращаем 200 OK
+        w.WriteHeader(http.StatusOK)
     }
 }
 
@@ -64,31 +64,42 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
         metricType := chi.URLParam(r, "metricType")
         metricName := chi.URLParam(r, "metricName")
 
-        var value interface{}
+        var value any
         var err error
 
         switch metricType {
         case "gauge":
             value, err = storage.GetGauge(metricName)
+            if err == nil {
+                w.WriteHeader(http.StatusOK)
+            }
+            
+
         case "counter":
+            
             value, err = storage.GetCounter(metricName)
+
+            if err == nil {
+                w.WriteHeader(http.StatusOK)
+            }
+            
+            
+
         default:
-            w.WriteHeader(http.StatusBadRequest)
+            w.WriteHeader(http.StatusNotFound)
             fmt.Fprintf(w, "Unknown metric type: %s", metricType)
             return
         }
 
-        if err == storage.ErrMetricNotFound() {
-            w.WriteHeader(http.StatusNotFound)
-            fmt.Fprintf(w, "Metric not found: %s/%s", metricType, metricName)
-            return
-        } else if err != nil {
+
+
+           if err != nil {
             w.WriteHeader(http.StatusNotFound)
             fmt.Fprintf(w, "Error getting metric: %s/%s", metricType, metricName)
             return
         }
 
-        w.WriteHeader(http.StatusOK)
+   //     w.WriteHeader(http.StatusOK)
         fmt.Fprintln(w, value)
     }
 }
