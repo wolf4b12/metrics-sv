@@ -70,10 +70,12 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
         switch metricType {
         case "gauge":
             value, err = storage.GetGauge(metricName)
+            w.WriteHeader(http.StatusOK)
         case "counter":
             value, err = storage.GetCounter(metricName)
+            w.WriteHeader(http.StatusOK)
         default:
-            w.WriteHeader(http.StatusBadRequest)
+            w.WriteHeader(http.StatusNotFound)
             fmt.Fprintf(w, "Unknown metric type: %s", metricType)
             return
         }
