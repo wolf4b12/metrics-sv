@@ -12,7 +12,7 @@ type Storage interface {
     GetGauge(name string) (float64, error)
     GetCounter(name string) (int64, error)
     AllMetrics() map[string]map[string]interface{}
-    ErrMetricNotFound() error // Объявление метода ErrMetricNotFound в интерфейсе
+//    ErrMetricNotFound() error // Объявление метода ErrMetricNotFound в интерфейсе
 }
 
 // MemStorage реализация хранилища в памяти
