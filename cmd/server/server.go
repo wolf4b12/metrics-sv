@@ -15,7 +15,7 @@ func main() {
     // Создание нового роутера с использованием chi
     router := chi.NewRouter()
 
-    // Настройка middleware для журналирования запросов
+    // Настройка middleware для журналирования  запросов
     router.Use(middleware.Logger)
 
     // Маршрут для обновления метрик
