@@ -95,7 +95,7 @@ func parseFlags() Config {
 	var (
 		serverAddress  = flag.String("a", "http://localhost:8080", "HTTP server address")
 		reportInterval = flag.String("r", "2", "Report interval in seconds")
-		pollInterval   = flag.String("p", "20", "Poll interval in seconds")
+		pollInterval   = flag.String("p", "2", "Poll interval in seconds")
 	)
 
 	flag.Parse()
