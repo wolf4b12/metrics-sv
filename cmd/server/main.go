@@ -53,13 +53,8 @@ func (s *MemStorage) UpdateCounter(name string, value int64) {
     s.mu.Lock()
     // Отменяем блокировку при выходе из функции
     defer s.mu.Unlock()
-    // Если метрика уже существует, добавляем к ней значение
-    if _, ok := s.counters[name]; ok {
-        s.counters[name] += value
-    } else {
-        // Если метрика не существует, создаем ее с заданным значением
-        s.counters[name] = value
-    }
+    // Добавляем значение к существующему или создаем новую метрику
+    s.counters[name] += value
 }
 
 // UpdateHandler обработчик запросов на обновление метрик
