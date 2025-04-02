@@ -2,55 +2,127 @@ package main
 
 import (
 	"net/http"
+	"reflect"
+	"sync"
 	"testing"
+	"time"
 )
 
-func TestCollectMetrics(t *testing.T) {
+func TestNewAgent(t *testing.T) {
 	type args struct {
-		metrics *Metrics
+		poll   time.Duration
+		report time.Duration
+		addr   string
 	}
 	tests := []struct {
 		name string
 		args args
+		want *Agent
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			CollectMetrics(tt.args.metrics)
-		})
-	}
-}
-
-func TestSendMetric(t *testing.T) {
-	type args struct {
-		client        *http.Client
-		serverAddress string
-		metricType    string
-		metricName    string
-		value         interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := SendMetric(tt.args.client, tt.args.serverAddress, tt.args.metricType, tt.args.metricName, tt.args.value); (err != nil) != tt.wantErr {
-				t.Errorf("SendMetric() error = %v, wantErr %v", err, tt.wantErr)
+			if got := NewAgent(tt.args.poll, tt.args.report, tt.args.addr); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewAgent() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestSendAllMetrics(t *testing.T) {
+func Test_parseFlags(t *testing.T) {
+	tests := []struct {
+		name  string
+		want  time.Duration
+		want1 time.Duration
+		want2 string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1, got2 := parseFlags()
+			if got != tt.want {
+				t.Errorf("parseFlags() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("parseFlags() got1 = %v, want %v", got1, tt.want1)
+			}
+			if got2 != tt.want2 {
+				t.Errorf("parseFlags() got2 = %v, want %v", got2, tt.want2)
+			}
+		})
+	}
+}
+
+func TestAgent_CollectMetrics(t *testing.T) {
+	type fields struct {
+		gauges         map[string]float64
+		counters       map[string]int64
+		pollCount      int64
+		mu             sync.Mutex
+		pollInterval   time.Duration
+		reportInterval time.Duration
+		addr           string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Agent{
+				gauges:         tt.fields.gauges,
+				counters:       tt.fields.counters,
+				pollCount:      tt.fields.pollCount,
+				mu:             tt.fields.mu,
+				pollInterval:   tt.fields.pollInterval,
+				reportInterval: tt.fields.reportInterval,
+				addr:           tt.fields.addr,
+			}
+			a.CollectMetrics()
+		})
+	}
+}
+
+func TestAgent_SendMetrics(t *testing.T) {
+	type fields struct {
+		gauges         map[string]float64
+		counters       map[string]int64
+		pollCount      int64
+		mu             sync.Mutex
+		pollInterval   time.Duration
+		reportInterval time.Duration
+		addr           string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Agent{
+				gauges:         tt.fields.gauges,
+				counters:       tt.fields.counters,
+				pollCount:      tt.fields.pollCount,
+				mu:             tt.fields.mu,
+				pollInterval:   tt.fields.pollInterval,
+				reportInterval: tt.fields.reportInterval,
+				addr:           tt.fields.addr,
+			}
+			a.SendMetrics()
+		})
+	}
+}
+
+func Test_sendMetric(t *testing.T) {
 	type args struct {
-		client        *http.Client
-		serverAddress string
-		metrics       *Metrics
+		client *http.Client
+		url    string
 	}
 	tests := []struct {
 		name string
@@ -60,37 +132,7 @@ func TestSendAllMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			SendAllMetrics(tt.args.client, tt.args.serverAddress, tt.args.metrics)
-		})
-	}
-}
-
-func TestRunAgent(t *testing.T) {
-	type args struct {
-		cfg Config
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			RunAgent(tt.args.cfg)
-		})
-	}
-}
-
-func Test_main(t *testing.T) {
-	tests := []struct {
-		name string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			main()
+			sendMetric(tt.args.client, tt.args.url)
 		})
 	}
 }

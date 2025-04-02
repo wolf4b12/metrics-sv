@@ -6,142 +6,145 @@ import (
     "log"
     "math/rand"
     "net/http"
-    "os"
     "runtime"
-    "sync/atomic"
+    "sync"
     "time"
 )
 
-// Metrics содержит метрики, которые собирает агент
-type Metrics struct {
-    PollCount   int64         // Counter, увеличивается при каждом обновлении метрик
-    RandomValue float64       // Gauge, случайное значение
-    MemStats    runtime.MemStats // Метрики из runtime
+type Agent struct {
+    gauges         map[string]float64
+    counters       map[string]int64
+    pollCount      int64
+    mu             sync.Mutex
+    pollInterval   time.Duration
+    reportInterval time.Duration
+    addr           string
 }
 
-// Config содержит конфигурацию агента
-type Config struct {
-    PollInterval   time.Duration // Интервал обновления метрик
-    ReportInterval time.Duration // Интервал отправки метрик на сервер
-    ServerAddress  string        // Адрес сервера для отправки метрик
-}
-
-// CollectMetrics собирает метрики из runtime и обновляет кастомные метрики
-func CollectMetrics(metrics *Metrics) {
-    atomic.AddInt64(&metrics.PollCount, 1)
-    metrics.RandomValue = rand.Float64()
-    runtime.ReadMemStats(&metrics.MemStats)
-}
-
-// SendMetric отправляет одну метрику на сервер по HTTP
-func SendMetric(client *http.Client, serverAddress, metricType, metricName string, value interface{}) error {
-    url := fmt.Sprintf("%s/update/%s/%s/%v", serverAddress, metricType, metricName, value)
-    req, err := http.NewRequest(http.MethodPost, url, nil)
-    if err != nil {
-        return err
+func NewAgent(poll, report time.Duration, addr string) *Agent {
+    return &Agent{
+        gauges:         make(map[string]float64),
+        counters:       make(map[string]int64),
+        pollInterval:   poll,
+        reportInterval: report,
+        addr:           addr,
     }
-    req.Header.Set("Content-Type", "text/plain")
+}
 
-    resp, err := client.Do(req)
+func parseFlags() (time.Duration, time.Duration, string) {
+    var (
+        addr           string
+        reportInterval int
+        pollInterval   int
+    )
+
+    flag.StringVar(&addr, "a", "localhost:8080", "HTTP server address")
+    flag.IntVar(&pollInterval, "p", 2, "Poll interval in seconds")
+    flag.IntVar(&reportInterval, "r", 10, "Report interval in seconds")
+    
+    flag.Parse()
+    
+    if flag.NArg() > 0 {
+        log.Fatalf("Unknown flags or arguments: %v", flag.Args())
+    }
+
+    return time.Duration(pollInterval) * time.Second,
+        time.Duration(reportInterval) * time.Second,
+        addr
+}
+
+func (a *Agent) CollectMetrics() {
+    var memStats runtime.MemStats
+    
+    for {
+        runtime.ReadMemStats(&memStats)
+        
+        a.mu.Lock()
+        
+        // Runtime gauge metrics
+        a.gauges["Alloc"] = float64(memStats.Alloc)
+        a.gauges["BuckHashSys"] = float64(memStats.BuckHashSys)
+        a.gauges["Frees"] = float64(memStats.Frees)
+        a.gauges["GCCPUFraction"] = memStats.GCCPUFraction
+        a.gauges["GCSys"] = float64(memStats.GCSys)
+        a.gauges["HeapAlloc"] = float64(memStats.HeapAlloc)
+        a.gauges["HeapIdle"] = float64(memStats.HeapIdle)
+        a.gauges["HeapInuse"] = float64(memStats.HeapInuse)
+        a.gauges["HeapObjects"] = float64(memStats.HeapObjects)
+        a.gauges["HeapReleased"] = float64(memStats.HeapReleased)
+        a.gauges["HeapSys"] = float64(memStats.HeapSys)
+        a.gauges["LastGC"] = float64(memStats.LastGC)
+        a.gauges["Lookups"] = float64(memStats.Lookups)
+        a.gauges["MCacheInuse"] = float64(memStats.MCacheInuse)
+        a.gauges["MCacheSys"] = float64(memStats.MCacheSys)
+        a.gauges["MSpanInuse"] = float64(memStats.MSpanInuse)
+        a.gauges["MSpanSys"] = float64(memStats.MSpanSys)
+        a.gauges["Mallocs"] = float64(memStats.Mallocs)
+        a.gauges["NextGC"] = float64(memStats.NextGC)
+        a.gauges["NumForcedGC"] = float64(memStats.NumForcedGC)
+        a.gauges["NumGC"] = float64(memStats.NumGC)
+        a.gauges["OtherSys"] = float64(memStats.OtherSys)
+        a.gauges["PauseTotalNs"] = float64(memStats.PauseTotalNs)
+        a.gauges["StackInuse"] = float64(memStats.StackInuse)
+        a.gauges["StackSys"] = float64(memStats.StackSys)
+        a.gauges["Sys"] = float64(memStats.Sys)
+        a.gauges["TotalAlloc"] = float64(memStats.TotalAlloc)
+        
+        // Custom metrics
+        a.gauges["RandomValue"] = rand.Float64()
+        a.pollCount++
+        a.counters["PollCount"] = a.pollCount
+        
+        a.mu.Unlock()
+        time.Sleep(a.pollInterval)
+    }
+}
+
+func (a *Agent) SendMetrics() {
+    client := &http.Client{Timeout: 5 * time.Second}
+    baseURL := fmt.Sprintf("http://%s/update", a.addr)
+    
+    for {
+        a.mu.Lock()
+        
+        // Send gauge metrics
+        for name, value := range a.gauges {
+            url := fmt.Sprintf("%s/gauge/%s/%f", baseURL, name, value)
+            go sendMetric(client, url)
+        }
+        
+        // Send counter metrics
+        for name, value := range a.counters {
+            url := fmt.Sprintf("%s/counter/%s/%d", baseURL, name, value)
+            go sendMetric(client, url)
+        }
+        
+        a.mu.Unlock()
+        time.Sleep(a.reportInterval)
+    }
+}
+
+func sendMetric(client *http.Client, url string) {
+    resp, err := client.Post(url, "text/plain", nil)
     if err != nil {
-        return err
+        log.Printf("Error sending metric: %v\n", err)
+        return
     }
     defer resp.Body.Close()
-
+    
     if resp.StatusCode != http.StatusOK {
-        return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-    }
-    return nil
-}
-
-// SendAllMetrics отправляет все собранные метрики на сервер
-func SendAllMetrics(client *http.Client, serverAddress string, metrics *Metrics) {
-    // Отправка кастомных метрик
-    SendMetric(client, serverAddress, "counter", "PollCount", atomic.LoadInt64(&metrics.PollCount))
-    SendMetric(client, serverAddress, "gauge", "RandomValue", metrics.RandomValue)
-
-    // Отправка метрик из runtime.MemStats
-    memStats := metrics.MemStats
-    SendMetric(client, serverAddress, "gauge", "Alloc", memStats.Alloc)
-    SendMetric(client, serverAddress, "gauge", "BuckHashSys", memStats.BuckHashSys)
-    SendMetric(client, serverAddress, "gauge", "Frees", memStats.Frees)
-    SendMetric(client, serverAddress, "gauge", "GCCPUFraction", memStats.GCCPUFraction)
-    SendMetric(client, serverAddress, "gauge", "GCSys", memStats.GCSys)
-    SendMetric(client, serverAddress, "gauge", "HeapAlloc", memStats.HeapAlloc)
-    SendMetric(client, serverAddress, "gauge", "HeapIdle", memStats.HeapIdle)
-    SendMetric(client, serverAddress, "gauge", "HeapInuse", memStats.HeapInuse)
-    SendMetric(client, serverAddress, "gauge", "HeapObjects", memStats.HeapObjects)
-    SendMetric(client, serverAddress, "gauge", "HeapReleased", memStats.HeapReleased)
-    SendMetric(client, serverAddress, "gauge", "HeapSys", memStats.HeapSys)
-    SendMetric(client, serverAddress, "gauge", "LastGC", memStats.LastGC)
-    SendMetric(client, serverAddress, "gauge", "Lookups", memStats.Lookups)
-    SendMetric(client, serverAddress, "gauge", "MCacheInuse", memStats.MCacheInuse)
-    SendMetric(client, serverAddress, "gauge", "MCacheSys", memStats.MCacheSys)
-    SendMetric(client, serverAddress, "gauge", "MSpanInuse", memStats.MSpanInuse)
-    SendMetric(client, serverAddress, "gauge", "MSpanSys", memStats.MSpanSys)
-    SendMetric(client, serverAddress, "gauge", "Mallocs", memStats.Mallocs)
-    SendMetric(client, serverAddress, "gauge", "NextGC", memStats.NextGC)
-    SendMetric(client, serverAddress, "gauge", "NumForcedGC", memStats.NumForcedGC)
-    SendMetric(client, serverAddress, "gauge", "NumGC", memStats.NumGC)
-    SendMetric(client, serverAddress, "gauge", "OtherSys", memStats.OtherSys)
-    SendMetric(client, serverAddress, "gauge", "PauseTotalNs", memStats.PauseTotalNs)
-    SendMetric(client, serverAddress, "gauge", "StackInuse", memStats.StackInuse)
-    SendMetric(client, serverAddress, "gauge", "StackSys", memStats.StackSys)
-    SendMetric(client, serverAddress, "gauge", "Sys", memStats.Sys)
-    SendMetric(client, serverAddress, "gauge", "TotalAlloc", memStats.TotalAlloc)
-
-    log.Println("Metrics sent successfully")
-}
-
-// RunAgent запускает агент для сбора и отправки метрик с заданными интервалами
-func RunAgent(cfg Config) {
-    client := &http.Client{Timeout: 5 * time.Second}
-    var metrics Metrics
-
-    tickerPoll := time.NewTicker(cfg.PollInterval)   // Таймер для обновления метрик
-    tickerReport := time.NewTicker(cfg.ReportInterval) // Таймер для отправки метрик
-
-    for {
-        select {
-        case <-tickerPoll.C:
-            log.Println("Collecting metrics...")
-            CollectMetrics(&metrics)
-
-        case <-tickerReport.C:
-            log.Println("Sending metrics...")
-            go SendAllMetrics(client, cfg.ServerAddress, &metrics) // Отправка в отдельной горутине
-
-            // Сброс счетчика PollCount после отправки
-            atomic.StoreInt64(&metrics.PollCount, 0)
-        }
+        log.Printf("Unexpected status code: %d\n", resp.StatusCode)
     }
 }
 
 func main() {
-    // Определение флагов
-    serverAddr := flag.String("a", "localhost:8080", "Адрес эндпоинта HTTP-сервера (по умолчанию localhost:8080).")
-    reportInterval := flag.Int("r", 5, "Частота отправки метрик на сервер в секундах (по умолчанию 10 секунд).")
-    pollInterval := flag.Int("p", 2, "Частота опроса метрик из пакета runtime в секундах (по умолчанию 2 секунды).")
-
-    // Парсинг флагов
-    flag.Parse()
-
-    // Проверка наличия неизвестных флагов
-    if flag.NArg() > 0 {
-        log.Fatalf("Неизвестный флаг: %s\n", os.Args[flag.NArg()-1])
-    }
-
-    // Преобразование значений интервалов в Duration
-    reportDuration := time.Duration(*reportInterval) * time.Second
-    pollDuration := time.Duration(*pollInterval) * time.Second
-
-    // Конфигурация агента
-    cfg := Config{
-        PollInterval:   pollDuration,
-        ReportInterval: reportDuration,
-        ServerAddress:  *serverAddr,
-    }
-
-    log.Println("Starting agent...")
-    RunAgent(cfg) // Запуск агента
+    rand.Seed(time.Now().UnixNano())
+    
+    poll, report, addr := parseFlags()
+    agent := NewAgent(poll, report, addr)
+    
+    go agent.CollectMetrics()
+    go agent.SendMetrics()
+    
+    select {} // Keep main goroutine alive
 }
