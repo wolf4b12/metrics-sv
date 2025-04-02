@@ -15,7 +15,7 @@ type Agent struct {
     gauges         map[string]float64
     counters       map[string]int64
     pollCount      int64
-    mu             sync.Mutex
+    mu             *sync.Mutex
     pollInterval   time.Duration
     reportInterval time.Duration
     addr           string
