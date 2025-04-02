@@ -8,8 +8,9 @@ import (
 
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
-    "github.com/wolf4b12/metrics-sv.git/internal/storage"
+    storage  "github.com/wolf4b12/metrics-sv.git/internal/storage"
     handler "github.com/wolf4b12/metrics-sv.git/internal/handlers"
+
 )
 
 func main() {
