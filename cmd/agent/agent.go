@@ -139,13 +139,13 @@ func sendMetric(client *http.Client, url string) {
 }
 
 func main() {
-    rand.Seed(time.Now().UnixNano())
-    
+    rand.New(rand.NewSource(time.Now().UnixNano())) // Create new source for random numbers
+
     poll, report, addr := parseFlags()
     agent := NewAgent(poll, report, addr)
-    
+
     go agent.CollectMetrics()
     go agent.SendMetrics()
-    
+
     select {} // Keep main goroutine alive
 }
