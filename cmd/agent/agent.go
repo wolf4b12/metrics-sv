@@ -28,6 +28,7 @@ func NewAgent(poll, report time.Duration, addr string) *Agent {
         pollInterval:   poll,
         reportInterval: report,
         addr:           addr,
+        mu:             &sync.Mutex{},
     }
 }
 
