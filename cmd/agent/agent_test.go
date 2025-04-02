@@ -87,37 +87,7 @@ func TestAgent_CollectMetrics(t *testing.T) {
     }
 }
 
-func TestAgent_SendMetrics(t *testing.T) {
-    type fields struct {
-        gauges         map[string]float64
-        counters       map[string]int64
-        pollCount      int64
-        mu             *sync.Mutex // Теперь указатель на Mutex
-        pollInterval   time.Duration
-        reportInterval time.Duration
-        addr           string
-    }
-    tests := []struct {
-        name   string
-        fields fields
-    }{
-        // TODO: Add test cases.
-    }
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            a := &Agent{
-                gauges:         tt.fields.gauges,
-                counters:       tt.fields.counters,
-                pollCount:      tt.fields.pollCount,
-                mu:             tt.fields.mu, // Указатель на Mutex
-                pollInterval:   tt.fields.pollInterval,
-                reportInterval: tt.fields.reportInterval,
-                addr:           tt.fields.addr,
-            }
-            a.SendMetrics()
-        })
-    }
-}
+
 
 func Test_sendMetric(t *testing.T) {
     type args struct {
