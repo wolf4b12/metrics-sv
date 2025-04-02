@@ -2,31 +2,23 @@ package storage
 
 import (
 	"reflect"
-	"sync"
+//	"sync"
 	"testing"
 )
 
+// Тесты
 func TestMemStorage_ErrMetricNotFound(t *testing.T) {
-	type fields struct {
-		mu       sync.RWMutex
-		gauges   map[string]float64
-		counters map[string]int64
-	}
 	tests := []struct {
 		name    string
-		fields  fields
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"Error returned", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &MemStorage{
-				mu:       tt.fields.mu,
-				gauges:   tt.fields.gauges,
-				counters: tt.fields.counters,
-			}
-			if err := s.ErrMetricNotFound(); (err != nil) != tt.wantErr {
+			s := &MemStorage{}
+			err := s.ErrMetricNotFound()
+			if (err != nil) != tt.wantErr {
 				t.Errorf("MemStorage.ErrMetricNotFound() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -38,11 +30,12 @@ func TestNewMemStorage(t *testing.T) {
 		name string
 		want *MemStorage
 	}{
-		// TODO: Add test cases.
+		{"Create new storage", NewMemStorage()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewMemStorage(); !reflect.DeepEqual(got, tt.want) {
+			got := NewMemStorage()
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewMemStorage() = %v, want %v", got, tt.want)
 			}
 		})
@@ -50,89 +43,61 @@ func TestNewMemStorage(t *testing.T) {
 }
 
 func TestMemStorage_UpdateGauge(t *testing.T) {
-	type fields struct {
-		mu       sync.RWMutex
-		gauges   map[string]float64
-		counters map[string]int64
-	}
-	type args struct {
-		name  string
-		value float64
-	}
 	tests := []struct {
 		name   string
-		fields fields
-		args   args
+		fields map[string]float64
+		args   struct{ name string; value float64 }
+		want   float64
 	}{
-		// TODO: Add test cases.
+		{"Update gauge metric", map[string]float64{}, struct{ name string; value float64 }{"testGauge", 123.45}, 123.45},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &MemStorage{
-				mu:       tt.fields.mu,
-				gauges:   tt.fields.gauges,
-				counters: tt.fields.counters,
-			}
+			s := &MemStorage{gauges: tt.fields}
 			s.UpdateGauge(tt.args.name, tt.args.value)
+			if got := s.gauges[tt.args.name]; got != tt.want {
+				t.Errorf("UpdateGauge() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
 
 func TestMemStorage_UpdateCounter(t *testing.T) {
-	type fields struct {
-		mu       sync.RWMutex
-		gauges   map[string]float64
-		counters map[string]int64
-	}
-	type args struct {
-		name  string
-		value int64
-	}
 	tests := []struct {
 		name   string
-		fields fields
-		args   args
+		fields map[string]int64
+		args   struct{ name string; value int64 }
+		want   int64
 	}{
-		// TODO: Add test cases.
+		{"Update counter metric", map[string]int64{}, struct{ name string; value int64 }{"testCounter", 10}, 10},
+		{"Update existing counter", map[string]int64{"testCounter": 5}, struct{ name string; value int64 }{"testCounter", 10}, 15},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &MemStorage{
-				mu:       tt.fields.mu,
-				gauges:   tt.fields.gauges,
-				counters: tt.fields.counters,
-			}
+			s := &MemStorage{counters: tt.fields}
 			s.UpdateCounter(tt.args.name, tt.args.value)
+			if got := s.counters[tt.args.name]; got != tt.want {
+				t.Errorf("UpdateCounter() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
 
 func TestMemStorage_GetGauge(t *testing.T) {
-	type fields struct {
-		mu       sync.RWMutex
-		gauges   map[string]float64
-		counters map[string]int64
-	}
-	type args struct {
-		name string
-	}
 	tests := []struct {
 		name    string
-		fields  fields
-		args    args
+		fields  map[string]float64
+		args    string
 		want    float64
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"Get existing gauge metric", map[string]float64{"testGauge": 123.45}, "testGauge", 123.45, false},
+		{"Get non-existing gauge metric", map[string]float64{}, "nonExisting", 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &MemStorage{
-				mu:       tt.fields.mu,
-				gauges:   tt.fields.gauges,
-				counters: tt.fields.counters,
-			}
-			got, err := s.GetGauge(tt.args.name)
+			s := &MemStorage{gauges: tt.fields}
+			got, err := s.GetGauge(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MemStorage.GetGauge() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -145,31 +110,20 @@ func TestMemStorage_GetGauge(t *testing.T) {
 }
 
 func TestMemStorage_GetCounter(t *testing.T) {
-	type fields struct {
-		mu       sync.RWMutex
-		gauges   map[string]float64
-		counters map[string]int64
-	}
-	type args struct {
-		name string
-	}
 	tests := []struct {
 		name    string
-		fields  fields
-		args    args
+		fields  map[string]int64
+		args    string
 		want    int64
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{"Get existing counter metric", map[string]int64{"testCounter": 10}, "testCounter", 10, false},
+		{"Get non-existing counter metric", map[string]int64{}, "nonExisting", 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &MemStorage{
-				mu:       tt.fields.mu,
-				gauges:   tt.fields.gauges,
-				counters: tt.fields.counters,
-			}
-			got, err := s.GetCounter(tt.args.name)
+			s := &MemStorage{counters: tt.fields}
+			got, err := s.GetCounter(tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("MemStorage.GetCounter() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -182,22 +136,32 @@ func TestMemStorage_GetCounter(t *testing.T) {
 }
 
 func TestMemStorage_AllMetrics(t *testing.T) {
-	type fields struct {
-		mu       sync.RWMutex
-		gauges   map[string]float64
-		counters map[string]int64
-	}
 	tests := []struct {
 		name   string
-		fields fields
-		want   map[string]map[string]interface{}
+		fields struct {
+			gauges   map[string]float64
+			counters map[string]int64
+		}
+		want map[string]map[string]interface{}
 	}{
-		// TODO: Add test cases.
+		{"Get all metrics", struct {
+			gauges   map[string]float64
+			counters map[string]int64
+		}{gauges: map[string]float64{"testGauge": 123.45}, counters: map[string]int64{"testCounter": 10}}, map[string]map[string]interface{}{
+			"gauges":   {"testGauge": 123.45},
+			"counters": {"testCounter": 10},
+		}},
+		{"Empty storage", struct {
+			gauges   map[string]float64
+			counters map[string]int64
+		}{gauges: map[string]float64{}, counters: map[string]int64{}}, map[string]map[string]interface{}{
+			"gauges":   {},
+			"counters": {},
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &MemStorage{
-				mu:       tt.fields.mu,
 				gauges:   tt.fields.gauges,
 				counters: tt.fields.counters,
 			}
