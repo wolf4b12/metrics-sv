@@ -2,8 +2,8 @@ package main
 
 import (
     "log"
-    server   "github.com/wolf4b12/metrics-sv.git/internal/server"
-    config   "github.com/wolf4b12/metrics-sv.git/internal/config"
+    server   "github.com/wolf4b12/metrics-sv.git/internal/server/srv"
+    config   "github.com/wolf4b12/metrics-sv.git/internal/server/config"
 )
 
 

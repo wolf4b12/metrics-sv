@@ -1,5 +1,5 @@
 // internal/server/server.go
-package server
+package srv
 
 import (
     "fmt"
@@ -9,8 +9,8 @@ import (
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
 
-    storage  "github.com/wolf4b12/metrics-sv.git/internal/storage"
-    handler "github.com/wolf4b12/metrics-sv.git/internal/handlers"
+    storage  "github.com/wolf4b12/metrics-sv.git/internal/server/storage"
+    handler "github.com/wolf4b12/metrics-sv.git/internal/server/handlers"
 )
 
 type Server struct {

@@ -5,7 +5,7 @@ import (
     "fmt"
     "net/http"
 
-    storage "github.com/wolf4b12/metrics-sv.git/internal/storage" // Импортируем пользовательский пакет storage
+    storage "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
 )
 
 
