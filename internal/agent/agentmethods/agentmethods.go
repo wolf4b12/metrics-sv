@@ -1,7 +1,6 @@
-package main
+package agentmethods
 
 import (
-    "flag"
     "fmt"
     "log"
     "math/rand"
@@ -9,9 +8,9 @@ import (
     "runtime"
     "sync"
     "time"
-    "os"
-    "strconv"
 )
+
+
 
 type Agent struct {
     gauges         map[string]float64
@@ -22,6 +21,8 @@ type Agent struct {
     reportInterval time.Duration
     addr           string
 }
+
+
 
 func NewAgent(poll, report time.Duration, addr string) *Agent {
     return &Agent{
@@ -34,59 +35,7 @@ func NewAgent(poll, report time.Duration, addr string) *Agent {
     }
 }
 
-func parseFlags() (time.Duration, time.Duration, string) {
-    // Определяем дефолтные значения для переменных
-    var (
-        addr           string
-        reportInterval int
-        pollInterval   int
-    )
 
-    // Читаем переменные окружения
-    if envAddr := os.Getenv("ADDRESS"); envAddr != "" {
-        addr = envAddr
-        log.Println("Использована переменная окружения ADDRESS:", addr)
-    } else {
-        // Переменная окружения не найдена, читаем аргумент командной строки
-        flag.StringVar(&addr, "a", "localhost:8080", "Адрес HTTP-сервера")
-    }
-
-    if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
-        var err error
-        reportInterval, err = strconv.Atoi(envReportInterval)
-        if err != nil {
-            log.Fatalf("Неверное значение REPORT_INTERVAL: %v", err)
-        }
-        log.Println("Использована переменная окружения REPORT_INTERVAL:", reportInterval)
-    } else {
-        // Переменная окружения не найдена, читаем аргумент командной строки
-        flag.IntVar(&reportInterval, "r", 10, "Интервал отправки метрик в секундах")
-    }
-
-    if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
-        var err error
-        pollInterval, err = strconv.Atoi(envPollInterval)
-        if err != nil {
-            log.Fatalf("Неверное значение POLL_INTERVAL: %v", err)
-        }
-        log.Println("Использована переменная окружения POLL_INTERVAL:", pollInterval)
-    } else {
-        // Переменная окружения не найдена, читаем аргумент командной строки
-        flag.IntVar(&pollInterval, "p", 2, "Интервал сбора метрик в секундах")
-    }
-
-    // Парсим флаги
-    flag.Parse()
-
-    // Проверка наличия неизвестных флагов
-    if flag.NArg() > 0 {
-        log.Fatalf("Неизвестный флаг или аргумент: %v", flag.Args())
-    }
-
-    return time.Duration(pollInterval) * time.Second,
-        time.Duration(reportInterval) * time.Second,
-        addr
-}
 
 func (a *Agent) CollectMetrics() {
     var memStats runtime.MemStats
@@ -145,13 +94,13 @@ func (a *Agent) SendMetrics() {
         // Send gauge metrics
         for name, value := range a.gauges {
             url := fmt.Sprintf("%s/gauge/%s/%f", baseURL, name, value)
-            go sendMetric(client, url)
+            go SendMetric(client, url)
         }
 
         // Send counter metrics
         for name, value := range a.counters {
             url := fmt.Sprintf("%s/counter/%s/%d", baseURL, name, value)
-            go sendMetric(client, url)
+            go SendMetric(client, url)
         }
 
         a.mu.Unlock()
@@ -159,7 +108,7 @@ func (a *Agent) SendMetrics() {
     }
 }
 
-func sendMetric(client *http.Client, url string) {
+func SendMetric(client *http.Client, url string) {
     resp, err := client.Post(url, "text/plain", nil)
     if err != nil {
         log.Printf("Error sending metric: %v\n", err)
@@ -170,16 +119,4 @@ func sendMetric(client *http.Client, url string) {
     if resp.StatusCode != http.StatusOK {
         log.Printf("Unexpected status code: %d\n", resp.StatusCode)
     }
-}
-
-func main() {
-    rand.New(rand.NewSource(time.Now().UnixNano())) // Create new source for random numbers
-
-    poll, report, addr := parseFlags()
-    agent := NewAgent(poll, report, addr)
-
-    go agent.CollectMetrics()
-    go agent.SendMetrics()
-
-    select {} // Keep main goroutine alive
 }
