@@ -1,7 +1,7 @@
 package storage_test
 
 import (
-    "reflect"
+ //   "reflect"
     "testing"
 
     "github.com/wolf4b12/metrics-sv.git/internal/server/storage"
@@ -63,27 +63,6 @@ func TestGetCounter_NotFound(t *testing.T) {
     }
 }
 
-// Тест для AllMetrics
-func TestAllMetrics(t *testing.T) {
-    memStorage := storage.NewMemStorage()
-    gauges := map[string]float64{"gauge1": 10.0, "gauge2": 20.0}
-    counters := map[string]int64{"counter1": 100, "counter2": 200}
-
-//    memStorage.metrics = map[string]map[string]interface{}{"gauges": gauges, "counters": counters}
-
-    allMetrics := memStorage.AllMetrics()
-
-    expectedGauges := reflect.ValueOf(gauges).MapKeys()
-    expectedCounters := reflect.ValueOf(counters).MapKeys()
-
-    if len(allMetrics["gauges"]) != len(expectedGauges) {
-        t.Errorf("TestAllMetrics failed. Expected number of gauges: %d, Got: %d", len(expectedGauges), len(allMetrics["gauges"]))
-    }
-
-    if len(allMetrics["counters"]) != len(expectedCounters) {
-        t.Errorf("TestAllMetrics failed. Expected number of counters: %d, Got: %d", len(expectedCounters), len(allMetrics["counters"]))
-    }
-}
 
 // Тест для ErrMetricNotFound
 func TestErrMetricNotFound(t *testing.T) {

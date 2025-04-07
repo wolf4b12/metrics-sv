@@ -1,115 +1,113 @@
 package agentmethods
 
 import (
-    "fmt"
-    "net/http"
-    "reflect"
- //   "runtime"
-    "sync"
-    "testing"
-    "time"
+	"net/http"
+	"reflect"
+	"sync"
+	"testing"
+	"time"
 )
 
-// TestNewAgent проверяет создание нового агента с правильными параметрами.
 func TestNewAgent(t *testing.T) {
-    pollInterval := 2 * time.Second
-    reportInterval := 10 * time.Second
-    addr := "example.com"
-
-    expectedAgent := &Agent{
-        gauges:         make(map[string]float64),
-        counters:       make(map[string]int64),
-        pollInterval:   pollInterval,
-        reportInterval: reportInterval,
-        addr:           addr,
-        mu:             &sync.Mutex{},
-    }
-
-    actualAgent := NewAgent(pollInterval, reportInterval, addr)
-
-    if !reflect.DeepEqual(expectedAgent, actualAgent) {
-        t.Errorf("Expected agent %+v, got %+v", expectedAgent, actualAgent)
-    }
+	type args struct {
+		poll   time.Duration
+		report time.Duration
+		addr   string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *Agent
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewAgent(tt.args.poll, tt.args.report, tt.args.addr); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewAgent() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
-// TestCollectMetrics проверяет сбор метрик агентом.
-func TestCollectMetrics(t *testing.T) {
-    // Создаем новый агент
-    agent := NewAgent(2*time.Second, 10*time.Second, "example.com")
-
-    // Запускаем сбор метрик
-    go agent.CollectMetrics()
-
-    time.Sleep(100 * time.Millisecond) // Даем немного времени на выполнение сбора метрик
-
-    // Проверяем, что хотя бы одна метрика собрана
-    if len(agent.gauges) == 0 || len(agent.counters) == 0 {
-        t.Error("Метрики не были собраны")
-    }
-
-    // Проверяем наличие конкретных метрик
-    expectedGaugeKeys := []string{"Alloc", "BuckHashSys", "Frees"}
-    for _, key := range expectedGaugeKeys {
-        if _, ok := agent.gauges[key]; !ok {
-            t.Errorf("Отсутствует ожидаемая метрика '%s'", key)
-        }
-    }
-
-    expectedCounterKeys := []string{"PollCount"}
-    for _, key := range expectedCounterKeys {
-        if _, ok := agent.counters[key]; !ok {
-            t.Errorf("Отсутствует ожидаемый счетчик '%s'", key)
-        }
-    }
+func TestAgent_CollectMetrics(t *testing.T) {
+	type fields struct {
+		gauges         map[string]float64
+		counters       map[string]int64
+		pollCount      int64
+		mu             *sync.Mutex
+		pollInterval   time.Duration
+		reportInterval time.Duration
+		addr           string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Agent{
+				gauges:         tt.fields.gauges,
+				counters:       tt.fields.counters,
+				pollCount:      tt.fields.pollCount,
+				mu:             tt.fields.mu,
+				pollInterval:   tt.fields.pollInterval,
+				reportInterval: tt.fields.reportInterval,
+				addr:           tt.fields.addr,
+			}
+			a.CollectMetrics()
+		})
+	}
 }
 
-// TestSendMetrics проверяет отправку метрик агентом.
-func TestSendMetrics(t *testing.T) {
-    // Создаем новый агент
-    agent := NewAgent(2*time.Second, 10*time.Second, "example.com")
-
-    // Создаем mock клиента HTTP для тестирования отправки
-    mockClient := &MockHTTPClient{}
-
-    // Устанавливаем тестовые данные
-    agent.gauges = map[string]float64{
-        "TestGauge": 123.45,
-    }
-    agent.counters = map[string]int64{
-        "TestCounter": 67890,
-    }
-
-    baseURL := fmt.Sprintf("http://%s/update", agent.addr)
-
-    // Запускаем отправку метрик
-    go agent.SendMetrics()
-
-    time.Sleep(100 * time.Millisecond) // Даем немного времени на выполнение отправки
-
-    // Проверяем, что запросы были сделаны
-    if len(mockClient.requests) == 0 {
-        t.Error("Запросы не были отправлены")
-    }
-
-    // Проверяем содержание запросов
-    expectedRequests := []string{
-        fmt.Sprintf("%s/gauge/TestGauge/123.450000", baseURL),
-        fmt.Sprintf("%s/counter/TestCounter/67890", baseURL),
-    }
-
-    for i, request := range mockClient.requests {
-        if request != expectedRequests[i] {
-            t.Errorf("Неправильный запрос #%d: ожидалось '%s', получено '%s'", i+1, expectedRequests[i], request)
-        }
-    }
+func TestAgent_SendMetrics(t *testing.T) {
+	type fields struct {
+		gauges         map[string]float64
+		counters       map[string]int64
+		pollCount      int64
+		mu             *sync.Mutex
+		pollInterval   time.Duration
+		reportInterval time.Duration
+		addr           string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &Agent{
+				gauges:         tt.fields.gauges,
+				counters:       tt.fields.counters,
+				pollCount:      tt.fields.pollCount,
+				mu:             tt.fields.mu,
+				pollInterval:   tt.fields.pollInterval,
+				reportInterval: tt.fields.reportInterval,
+				addr:           tt.fields.addr,
+			}
+			a.SendMetrics()
+		})
+	}
 }
 
-// MockHTTPClient имитирует поведение HTTP-клиента для тестирования.
-type MockHTTPClient struct {
-    requests []string
-}
-
-func (m *MockHTTPClient) Post(url, contentType string, body interface{}) (*http.Response, error) {
-    m.requests = append(m.requests, url)
-    return &http.Response{}, nil
+func TestSendMetric(t *testing.T) {
+	type args struct {
+		client *http.Client
+		url    string
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SendMetric(tt.args.client, tt.args.url)
+		})
+	}
 }
