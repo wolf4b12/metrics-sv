@@ -78,7 +78,6 @@ func (a *Agent) CollectMetrics() {
         a.gauges["RandomValue"] = rand.Float64()
         a.pollCount++
         a.counters["PollCount"] = a.pollCount
-
         a.mu.Unlock()
         time.Sleep(a.pollInterval)
     }

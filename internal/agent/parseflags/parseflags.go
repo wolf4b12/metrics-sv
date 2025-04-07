@@ -3,13 +3,9 @@ package parseflags
 import (
     "flag"
     "log"
-//    "math/rand"
     "os"
     "strconv"
-//    "sync"
     "time"
-
-//    "github.com/wolf4b12/metrics-sv.git/internal/agent/agentmethods" // Импортируем пакет agentmethods
 )
 
 

@@ -4,7 +4,6 @@ package srv
 import (
 	"net/http"
 	"testing"
-
 	"github.com/go-chi/chi/v5"
 )
 
@@ -18,7 +17,7 @@ func TestServer_Run(t *testing.T) {
 		fields  fields
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

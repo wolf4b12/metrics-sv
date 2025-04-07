@@ -10,7 +10,6 @@ func TestNewConfig(t *testing.T) {
 		name string
 		want *Config
 	}{
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

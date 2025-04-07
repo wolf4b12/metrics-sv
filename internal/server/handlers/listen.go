@@ -1,11 +1,9 @@
 package handlers
 
 import (
-//   "encoding/json"
     "fmt"
     "net/http"
-
-    storage "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
+    "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
 )
 
 

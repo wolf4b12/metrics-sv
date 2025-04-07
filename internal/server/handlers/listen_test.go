@@ -4,8 +4,7 @@ import (
 	"net/http"
 	"reflect"
 	"testing"
-
-	storage "github.com/wolf4b12/metrics-sv.git/internal/server/storage"
+	"github.com/wolf4b12/metrics-sv.git/internal/server/storage"
 )
 
 func TestListMetricsHandler(t *testing.T) {
@@ -17,7 +16,7 @@ func TestListMetricsHandler(t *testing.T) {
 		args args
 		want http.HandlerFunc
 	}{
-		// TODO: Add test cases.
+
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

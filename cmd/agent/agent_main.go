@@ -1,16 +1,10 @@
 package main
 
 import (
-//    "flag"
-//    "log"
     "math/rand"
-//    "os"
-//    "strconv"
-//    "sync"
     "time"
-
     "github.com/wolf4b12/metrics-sv.git/internal/agent/agentmethods" // Импортируем пакет agentmethods
-    "github.com/wolf4b12/metrics-sv.git/internal/agent/parseflags" // Импортируем пакет agentmethods
+    "github.com/wolf4b12/metrics-sv.git/internal/agent/parseflags" // Импортируем пакет parseflags
 )
 
 

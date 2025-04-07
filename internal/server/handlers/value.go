@@ -1,15 +1,11 @@
 package handlers
 
 import (
-//   "encoding/json"
     "fmt"
     "net/http"
     "github.com/go-chi/chi/v5"
-    storage "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
+    "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
 )
-
-
-
 
 
 

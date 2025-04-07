@@ -1,15 +1,11 @@
 package handlers
 
 import (
-//   "encoding/json"
     "net/http"
     "strings"
     "strconv"
-    storage "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
-)
-
-
-
+    "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
+) 
 
 
 // UpdateHandler — обработчик для обновления метрик

@@ -1,9 +1,7 @@
 package storage_test
 
 import (
- //   "reflect"
     "testing"
-
     "github.com/wolf4b12/metrics-sv.git/internal/server/storage"
 )
 
@@ -12,12 +10,9 @@ func TestUpdateGauge(t *testing.T) {
     memStorage := storage.NewMemStorage()
     name := "my_gauge"
     value := 10.5
-
     memStorage.UpdateGauge(name, value)
-
     result, _ := memStorage.GetGauge(name)
     expected := value
-
     if result != expected {
         t.Errorf("TestUpdateGauge failed. Expected: %.2f, Got: %.2f", expected, result)
     }
@@ -63,15 +58,10 @@ func TestGetCounter_NotFound(t *testing.T) {
     }
 }
 
-
 // Тест для ErrMetricNotFound
 func TestErrMetricNotFound(t *testing.T) {
-//	var name string
     memStorage := storage.NewMemStorage()
-//    name = "non_existent_metric"
-
     err := memStorage.ErrMetricNotFound()
-
     if err == nil || err.Error() != "metric not found" {
         t.Errorf("TestErrMetricNotFound failed. Expected error 'metric not found', got: %v", err)
     }

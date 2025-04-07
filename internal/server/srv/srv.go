@@ -5,12 +5,10 @@ import (
     "fmt"
     "log"
     "net/http"
-
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
-
-    storage  "github.com/wolf4b12/metrics-sv.git/internal/server/storage"
-    handler "github.com/wolf4b12/metrics-sv.git/internal/server/handlers"
+    "github.com/wolf4b12/metrics-sv.git/internal/server/storage"
+    "github.com/wolf4b12/metrics-sv.git/internal/server/handlers"
 )
 
 type Server struct {
@@ -23,10 +21,9 @@ func NewServer(addr string) *Server {
 
     router := chi.NewRouter()
     router.Use(middleware.Logger)
-
-    router.Post("/update/{metricType}/{metricName}/{metricValue}", handler.UpdateHandler(storage))
-    router.Get("/value/{metricType}/{metricName}", handler.ValueHandler(storage))
-    router.Get("/", handler.ListMetricsHandler(storage))
+    router.Post("/update/{metricType}/{metricName}/{metricValue}", handlers.UpdateHandler(storage))
+    router.Get("/value/{metricType}/{metricName}", handlers.ValueHandler(storage))
+    router.Get("/", handlers.ListMetricsHandler(storage))
 
     return &Server{
         router: router,
