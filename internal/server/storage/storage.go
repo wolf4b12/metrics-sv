@@ -15,22 +15,6 @@ type Storage interface {
     ErrMetricNotFound() error // Объявление метода ErrMetricNotFound в интерфейсе
 }
 
-type MockStorage struct {
-    metrics map[string]map[string]interface{}
-}
-
-// AllMetrics возвращает список метрик
-func (m *MockStorage) AllMetrics() map[string]map[string]interface{} {
-    return m.metrics
-}
-
-// ErrMetricNotFound возвращает сообщение об ошибке, когда метрика не найдена
-func (m *MockStorage) ErrMetricNotFound(metricName string) string {
-    return fmt.Sprintf("Metric '%s' not found.", metricName)
-}
-
-
-
 
 // MemStorage реализация хранилища в памяти
 type MemStorage struct {
