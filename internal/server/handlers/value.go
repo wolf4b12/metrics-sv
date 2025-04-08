@@ -1,13 +1,12 @@
 package handlers
 
 import (
-    "fmt"
-    "net/http"
-    "github.com/go-chi/chi/v5"
-    "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
+	"fmt"
+	"net/http"
+	"github.com/go-chi/chi/v5"
+	"github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
+	"github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
 )
-
-
 
 // ValueHandler обработчик для получения значения метрики
 func ValueHandler(storage storage.Storage) http.HandlerFunc {
@@ -19,9 +18,9 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
         var err error
 
         switch metricType {
-        case "gauge":
+        case constant.MetricTypeGauge:
             value, err = storage.GetGauge(metricName)
-        case "counter":
+        case constant.MetricTypeCounter:
             value, err = storage.GetCounter(metricName)
         default:
             w.WriteHeader(http.StatusBadRequest)

@@ -4,6 +4,7 @@ import (
     "net/http"
     "strings"
     "strconv"
+    "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
     "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
 ) 
 
@@ -27,7 +28,7 @@ func UpdateHandler(storage storage.Storage) http.HandlerFunc {
         metricType, metricName, metricValue := pathParts[0], pathParts[1], pathParts[2]
 
         switch metricType {
-        case "gauge":
+        case constant.MetricTypeGauge:
             value, err := strconv.ParseFloat(metricValue, 64)
             if err != nil {
                 w.WriteHeader(http.StatusBadRequest)
@@ -35,7 +36,7 @@ func UpdateHandler(storage storage.Storage) http.HandlerFunc {
             }
             storage.UpdateGauge(metricName, value)
 
-        case "counter":
+        case constant.MetricTypeCounter:
             value, err := strconv.ParseInt(metricValue, 10, 64)
             if err != nil {
                 w.WriteHeader(http.StatusBadRequest)

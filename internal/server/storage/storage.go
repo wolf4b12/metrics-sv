@@ -3,6 +3,7 @@ package storage
 import (
     "fmt"
     "sync"
+    "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
 )
 
 // Storage интерфейс для работы с хранилищем
@@ -77,14 +78,14 @@ func (s *MemStorage) AllMetrics() map[string]map[string]interface{} {
     s.mu.RLock()
     defer s.mu.RUnlock()
     result := map[string]map[string]interface{}{
-        "gauges":   make(map[string]interface{}),
-        "counters": make(map[string]interface{}),
+        constant.MetricTypeGauge:   make(map[string]interface{}),
+        constant.MetricTypeCounter: make(map[string]interface{}),
     }
     for k, v := range s.gauges {
-        result["gauges"][k] = v
+        result[constant.MetricTypeGauge][k] = v
     }
     for k, v := range s.counters {
-        result["counters"][k] = v
+        result[constant.MetricTypeCounter][k] = v
     }
     return result
 }
