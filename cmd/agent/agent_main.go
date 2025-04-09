@@ -9,13 +9,17 @@ import (
 
 
 func main() {
+
     rand.New(rand.NewSource(time.Now().UnixNano())) // Create new source for random numbers
 
     poll, report, addr := parseflags.ParseFlags()
+    
     agent := agentmethods.NewAgent(poll, report, addr) // Используем функцию NewAgent из пакета agentmethods
 
+
     go agent.CollectMetrics()
-    go agent.SendMetrics()
+
+    go agent.SendCollectedMetrics()
 
     select {} // Keep main goroutine alive
 }

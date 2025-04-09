@@ -31,7 +31,7 @@ func NewAgent(poll, report time.Duration, addr string) *Agent {
     }
 }
 
-func (a *Agent) CollectMetrics() {
+func (a *Agent) CollectMetrics() { // собираем метрики
     var memStats runtime.MemStats
 
     for {
@@ -60,7 +60,7 @@ func (a *Agent) CollectMetrics() {
     }
 }
 
-func (a *Agent) SendMetrics() {
+func (a *Agent) SendCollectedMetrics() { // отправляем собранные метрики
     client := &http.Client{Timeout: 5 * time.Second}
     baseURL := fmt.Sprintf("http://%s/update", a.addr)
 
@@ -70,13 +70,13 @@ func (a *Agent) SendMetrics() {
         // Send gauge metrics
         for name, value := range a.gauges {
             url := fmt.Sprintf("%s/gauge/%s/%f", baseURL, name, value)
-            go SendMetric(client, url)
+            go SendMetricToServer(client, url)
         }
 
         // Send counter metrics
         for name, value := range a.counters {
             url := fmt.Sprintf("%s/counter/%s/%d", baseURL, name, value)
-            go SendMetric(client, url)
+            go SendMetricToServer(client, url)
         }
 
         a.mu.Unlock()
@@ -84,7 +84,7 @@ func (a *Agent) SendMetrics() {
     }
 }
 
-func SendMetric(client *http.Client, url string) {
+func SendMetricToServer(client *http.Client, url string) { // вспомогательная функция для отправки метрик
     resp, err := client.Post(url, "text/plain", nil)
     if err != nil {
         log.Printf("Error sending metric: %v\n", err)
