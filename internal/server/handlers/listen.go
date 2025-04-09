@@ -3,14 +3,16 @@ package handlers
 import (
     "fmt"
     "net/http"
-    "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
+
 )
 
-
-
+// AllMetricsStorage интерфейс для получения всех метрик
+type AllMetricsStorage interface {
+    AllMetrics() map[string]map[string]interface{}
+}
 
 // ListMetricsHandler обработчик для получения списка всех метрик
-func ListMetricsHandler(storage storage.Storage) http.HandlerFunc {
+func ListMetricsHandler(storage AllMetricsStorage) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         w.Header().Set("Content-Type", "text/html; charset=utf-8")
 

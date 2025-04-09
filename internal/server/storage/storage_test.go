@@ -1,68 +1,182 @@
-package storage_test
+package storage
 
 import (
-    "testing"
-    "github.com/wolf4b12/metrics-sv.git/internal/server/storage"
+	"reflect"
+	"sync"
+	"testing"
 )
 
-// Тест для UpdateGauge
-func TestUpdateGauge(t *testing.T) {
-    memStorage := storage.NewMemStorage()
-    name := "my_gauge"
-    value := 10.5
-    memStorage.UpdateGauge(name, value)
-    result, _ := memStorage.GetGauge(name)
-    expected := value
-    if result != expected {
-        t.Errorf("TestUpdateGauge failed. Expected: %.2f, Got: %.2f", expected, result)
-    }
+func TestNewMemStorage(t *testing.T) {
+	tests := []struct {
+		name string
+		want *MemStorage
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewMemStorage(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewMemStorage() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
-// Тест для UpdateCounter
-func TestUpdateCounter(t *testing.T) {
-    memStorage := storage.NewMemStorage()
-    name := "my_counter"
-    value := int64(100)
-
-    memStorage.UpdateCounter(name, value)
-
-    result, _ := memStorage.GetCounter(name)
-    expected := value
-
-    if result != expected {
-        t.Errorf("TestUpdateCounter failed. Expected: %d, Got: %d", expected, result)
-    }
+func TestMemStorage_UpdateGauge(t *testing.T) {
+	type fields struct {
+		mu       sync.RWMutex
+		gauges   map[string]float64
+		counters map[string]int64
+	}
+	type args struct {
+		name  string
+		value float64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &MemStorage{
+				mu:       tt.fields.mu,
+				gauges:   tt.fields.gauges,
+				counters: tt.fields.counters,
+			}
+			s.UpdateGauge(tt.args.name, tt.args.value)
+		})
+	}
 }
 
-// Тест для GetGauge с несуществующей метрикой
-func TestGetGauge_NotFound(t *testing.T) {
-    memStorage := storage.NewMemStorage()
-    name := "non_existent_gauge"
-
-    _, err := memStorage.GetGauge(name)
-
-    if err == nil || err.Error() != "metric not found" {
-        t.Errorf("TestGetGauge_NotFound failed. Expected error 'metric not found', got: %v", err)
-    }
+func TestMemStorage_UpdateCounter(t *testing.T) {
+	type fields struct {
+		mu       sync.RWMutex
+		gauges   map[string]float64
+		counters map[string]int64
+	}
+	type args struct {
+		name  string
+		value int64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &MemStorage{
+				mu:       tt.fields.mu,
+				gauges:   tt.fields.gauges,
+				counters: tt.fields.counters,
+			}
+			s.UpdateCounter(tt.args.name, tt.args.value)
+		})
+	}
 }
 
-// Тест для GetCounter с несуществующим счетчиком
-func TestGetCounter_NotFound(t *testing.T) {
-    memStorage := storage.NewMemStorage()
-    name := "non_existent_counter"
-
-    _, err := memStorage.GetCounter(name)
-
-    if err == nil || err.Error() != "metric not found" {
-        t.Errorf("TestGetCounter_NotFound failed. Expected error 'metric not found', got: %v", err)
-    }
+func TestMemStorage_GetGauge(t *testing.T) {
+	type fields struct {
+		mu       sync.RWMutex
+		gauges   map[string]float64
+		counters map[string]int64
+	}
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    float64
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &MemStorage{
+				mu:       tt.fields.mu,
+				gauges:   tt.fields.gauges,
+				counters: tt.fields.counters,
+			}
+			got, err := s.GetGauge(tt.args.name)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MemStorage.GetGauge() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("MemStorage.GetGauge() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
-// Тест для ErrMetricNotFound
-func TestErrMetricNotFound(t *testing.T) {
-    memStorage := storage.NewMemStorage()
-    err := memStorage.ErrMetricNotFound()
-    if err == nil || err.Error() != "metric not found" {
-        t.Errorf("TestErrMetricNotFound failed. Expected error 'metric not found', got: %v", err)
-    }
+func TestMemStorage_GetCounter(t *testing.T) {
+	type fields struct {
+		mu       sync.RWMutex
+		gauges   map[string]float64
+		counters map[string]int64
+	}
+	type args struct {
+		name string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    int64
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &MemStorage{
+				mu:       tt.fields.mu,
+				gauges:   tt.fields.gauges,
+				counters: tt.fields.counters,
+			}
+			got, err := s.GetCounter(tt.args.name)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("MemStorage.GetCounter() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("MemStorage.GetCounter() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMemStorage_AllMetrics(t *testing.T) {
+	type fields struct {
+		mu       sync.RWMutex
+		gauges   map[string]float64
+		counters map[string]int64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   map[string]map[string]interface{}
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &MemStorage{
+				mu:       tt.fields.mu,
+				gauges:   tt.fields.gauges,
+				counters: tt.fields.counters,
+			}
+			if got := s.AllMetrics(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MemStorage.AllMetrics() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

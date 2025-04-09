@@ -6,27 +6,11 @@ import (
     "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
 )
 
-// Storage интерфейс для работы с хранилищем
-type Storage interface {
-    UpdateGauge(name string, value float64)
-    UpdateCounter(name string, value int64)
-    GetGauge(name string) (float64, error)
-    GetCounter(name string) (int64, error)
-    AllMetrics() map[string]map[string]interface{}
-    ErrMetricNotFound() error // Объявление метода ErrMetricNotFound в интерфейсе
-}
-
-
 // MemStorage реализация хранилища в памяти
 type MemStorage struct {
     mu       sync.RWMutex
     gauges   map[string]float64
     counters map[string]int64
-}
-
-// ErrMetricNotFound реализация метода ErrMetricNotFound для MemStorage
-func (s *MemStorage) ErrMetricNotFound() error {
-    return fmt.Errorf("metric not found")
 }
 
 // NewMemStorage конструктор хранилища
@@ -38,6 +22,7 @@ func NewMemStorage() *MemStorage {
 }
 
 // UpdateGauge обновление gauge-метрики
+
 func (s *MemStorage) UpdateGauge(name string, value float64) {
     s.mu.Lock()
     defer s.mu.Unlock()
@@ -54,10 +39,10 @@ func (s *MemStorage) UpdateCounter(name string, value int64) {
 // GetGauge получение gauge-метрики
 func (s *MemStorage) GetGauge(name string) (float64, error) {
     s.mu.RLock()
-    defer s.mu.RUnlock()
+ defer s.mu.RUnlock()
     value, ok := s.gauges[name]
     if !ok {
-        return 0, s.ErrMetricNotFound() // Использование метода ErrMetricNotFound
+        return 0, fmt.Errorf("metric not found")
     }
     return value, nil
 }
@@ -68,7 +53,7 @@ func (s *MemStorage) GetCounter(name string) (int64, error) {
     defer s.mu.RUnlock()
     value, ok := s.counters[name]
     if !ok {
-        return 0, s.ErrMetricNotFound() // Использование метода ErrMetricNotFound
+        return 0, fmt.Errorf("metric not found")
     }
     return value, nil
 }

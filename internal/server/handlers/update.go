@@ -5,12 +5,16 @@ import (
     "strings"
     "strconv"
     "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
-    "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
-) 
+)
 
+// UpdateStorage интерфейс для обновления метрик
+type UpdateStorage interface {
+    UpdateGauge(name string, value float64)
+    UpdateCounter(name string, value int64)
+}
 
 // UpdateHandler — обработчик для обновления метрик
-func UpdateHandler(storage storage.Storage) http.HandlerFunc {
+func UpdateHandler(storage UpdateStorage) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         w.Header().Set("Content-Type", "text/plain; charset=utf-8")
         
@@ -52,5 +56,3 @@ func UpdateHandler(storage storage.Storage) http.HandlerFunc {
         w.WriteHeader(http.StatusOK)
     }
 }
-
-

@@ -1,15 +1,20 @@
 package handlers
 
 import (
-	"fmt"
-	"net/http"
-	"github.com/go-chi/chi/v5"
-	"github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
-	"github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
+    "fmt"
+    "net/http"
+    "github.com/go-chi/chi/v5"
+    "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
 )
 
+// GetStorage интерфейс для получения метрик
+type GetStorage interface {
+    GetGauge(name string) (float64, error)
+    GetCounter(name string) (int64, error)
+}
+
 // ValueHandler обработчик для получения значения метрики
-func ValueHandler(storage storage.Storage) http.HandlerFunc {
+func ValueHandler(storage GetStorage) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         metricType := chi.URLParam(r, "metricType")
         metricName := chi.URLParam(r, "metricName")
@@ -28,11 +33,7 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
             return
         }
 
-        if err == storage.ErrMetricNotFound() {
-            w.WriteHeader(http.StatusNotFound)
-            fmt.Fprintf(w, "Metric not found: %s/%s", metricType, metricName)
-            return
-        } else if err != nil {
+        if err != nil {
             w.WriteHeader(http.StatusNotFound)
             fmt.Fprintf(w, "Error getting metric: %s/%s", metricType, metricName)
             return
@@ -42,4 +43,3 @@ func ValueHandler(storage storage.Storage) http.HandlerFunc {
         fmt.Fprintln(w, value)
     }
 }
-
