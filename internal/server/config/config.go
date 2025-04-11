@@ -32,9 +32,10 @@ func NewConfig() (*Config, error) { // Функция для создания н
     if err != nil {
         return nil, err // Если возникла ошибка, возвращаем nil и ошибку.
     }
-
+    defaultAddr := "localhost:8080"
     // Проверяем, какой источник использовал адрес
     if cfg.Addr == "" || cfg.Addr == "localhost:8080" { // Если адрес пустой или равен значению по умолчанию...
+        cfg.Addr = defaultAddr
         log.Println("Переменная окружения ADDRESS не найдена, используется значение по умолчанию:", cfg.Addr) // Логируем использование значения по умолчанию.
     } else if flagSet.Lookup("a") != nil && flagSet.Lookup("a").Value.String() != "" { // Если флаг '-a' был указан и имеет значение...
         log.Println("Используется флаг командной строки -a:", cfg.Addr) // Логируем использование флага командной строки.
