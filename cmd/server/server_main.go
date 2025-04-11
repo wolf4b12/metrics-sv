@@ -10,11 +10,15 @@ import (
 
 func main() {
 
-    cfg := config.NewConfig()
+    cfg, err := config.NewConfig()
+
+    if err != nil {
+        log.Fatalf("ошибка при создании конфигурации: %v", err)
+    }
     
     srv := server.NewServer(cfg.GetAddr()) // Используем метод GetAddr()
 
-    err := srv.Run()
+    err = srv.Run()
     if err != nil {
         log.Fatalf("Failed to run server: %v", err)
     }
