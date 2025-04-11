@@ -32,6 +32,11 @@ func NewConfig() (*Config, error) { // Функция для создания н
     if err != nil {
         return nil, err // Если возникла ошибка, возвращаем nil и ошибку.
     }
+    
+    if flagSet.NArg() > 0 {
+        log.Fatalf("Неизвестный флаг: %s\n", flagSet.Arg(flagSet.NArg()-1))
+    }
+
     defaultAddr := "localhost:8080"
     // Проверяем, какой источник использовал адрес
     if cfg.Addr == "" || cfg.Addr == "localhost:8080" { // Если адрес пустой или равен значению по умолчанию...
