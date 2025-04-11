@@ -1,52 +1,47 @@
-package config // Объявляем пакет 'config'.
+package config
 
-import ( // Начинаем секцию импорта пакетов.
-    "flag"     // Импортируем пакет для работы с флагами командной строки.
-    "log"      // Импортируем пакет для ведения логирования.
-    "os"       // Импортируем пакет для взаимодействия с операционной системой.
-    "github.com/caarlos0/env/v11" // Импортируем библиотеку 'env' для парсинга переменных окружения.
+import (
+    "flag"
+    "log"
+    "os"
+
+    "github.com/caarlos0/env/v11"
 )
 
-type Config struct { // Определяем структуру 'Config' для хранения настроек.
-    Addr string `env:"ADDRESS" envDefault:"localhost:8080"` // Поле 'Addr' хранит адрес, аннотировано для автоматического заполнения из переменной окружения 'ADDRESS' или флага '-a'.
+type Config struct {
+    Addr string `env:"ADDRESS" envDefault:"localhost:8080"`
 }
 
 // Метод для получения адреса
-func (c *Config) GetAddr() string { // Метод возвращает значение поля 'Addr'.
-    return c.Addr // Возвращаем текущее значение адреса.
+func (c *Config) GetAddr() string {
+    return c.Addr
 }
 
-func NewConfig() (*Config, error) { // Функция для создания новой конфигурации.
-    cfg := &Config{} // Создаём новую структуру 'Config'.
+func NewConfig() (*Config, error) {
+    cfg := &Config{}
 
     // Парсим переменные окружения
-    if err := env.Parse(cfg); err != nil { // Пробуем распарсить переменные окружения.
-        return nil, err // Если возникла ошибка, возвращаем nil и ошибку.
+    if err := env.Parse(cfg); err != nil {
+        return nil, err
     }
 
-    // Парсим флаги командной строки
-    flagSet := flag.NewFlagSet(os.Args[0], flag.ExitOnError) // Создаём новый набор флагов с именем программы.
-    flagSet.StringVar(&cfg.Addr, "a", "", "адрес эндпоинта HTTP-сервера") // Добавляем флаг '-a' для задания адреса.
+    // Устанавливаем флаг командной строки
+    flagSet := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+    flagSet.StringVar(&cfg.Addr, "a", cfg.Addr, "адрес эндпоинта HTTP-сервера")
 
-    err := flagSet.Parse(os.Args[1:]) // Парсим аргументы командной строки.
+    err := flagSet.Parse(os.Args[1:])
     if err != nil {
-        return nil, err // Если возникла ошибка, возвращаем nil и ошибку.
-    }
-    
-    if flagSet.NArg() > 0 {
-        log.Fatalf("Неизвестный флаг: %s\n", flagSet.Arg(flagSet.NArg()-1))
+        return nil, err
     }
 
-    defaultAddr := "localhost:8080"
-    // Проверяем, какой источник использовал адрес
-    if cfg.Addr == "" || cfg.Addr == "localhost:8080" { // Если адрес пустой или равен значению по умолчанию...
-        cfg.Addr = defaultAddr
-        log.Println("Переменная окружения ADDRESS не найдена, используется значение по умолчанию:", cfg.Addr) // Логируем использование значения по умолчанию.
-    } else if flagSet.Lookup("a") != nil && flagSet.Lookup("a").Value.String() != "" { // Если флаг '-a' был указан и имеет значение...
-        log.Println("Используется флаг командной строки -a:", cfg.Addr) // Логируем использование флага командной строки.
+    // Проверяем, откуда взято значение адреса
+    if cfg.Addr == "localhost:8080" {
+        log.Println("Переменная окружения ADDRESS не найдена, используется значение по умолчанию:", cfg.Addr)
+    } else if flagSet.Lookup("a") != nil && flagSet.Lookup("a").Value.String() != "" {
+        log.Println("Используется флаг командной строки -a:", cfg.Addr)
     } else {
-        log.Println("Используется переменная окружения ADDRESS:", cfg.Addr) // Логируем использование переменной окружения.
+        log.Println("Используется переменная окружения ADDRESS:", cfg.Addr)
     }
 
-    return cfg, nil // Возвращаем сконфигурированную структуру и отсутствие ошибок.
+    return cfg, nil
 }
