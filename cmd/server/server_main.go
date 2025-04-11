@@ -15,6 +15,8 @@ func main() {
     if err != nil {
         log.Fatalf("ошибка при создании конфигурации: %v", err)
     }
+
+    
     
     srv := server.NewServer(cfg.GetAddr()) // Используем метод GetAddr()
 
