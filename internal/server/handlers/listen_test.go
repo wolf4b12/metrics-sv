@@ -4,19 +4,18 @@ import (
 	"net/http"
 	"reflect"
 	"testing"
-	"github.com/wolf4b12/metrics-sv.git/internal/server/storage"
 )
 
 func TestListMetricsHandler(t *testing.T) {
 	type args struct {
-		storage storage.Storage
+		storage AllMetricsStorage
 	}
 	tests := []struct {
 		name string
 		args args
 		want http.HandlerFunc
 	}{
-
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

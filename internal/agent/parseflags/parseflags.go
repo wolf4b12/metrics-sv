@@ -23,7 +23,7 @@ func ParseFlags() (time.Duration, time.Duration, string) {
         log.Println("Использована переменная окружения ADDRESS:", addr)
     } else {
         // Переменная окружения не найдена, читаем аргумент командной строки
-        flag.StringVar(&addr, "a", "localhost:8080", "Адрес HTTP-сервера")
+        flag.StringVar(&addr, "a", "localhost:8080", "Адрес HTTP-сервера") //определяет флаг командной строки -a, который принимает значение адреса сервера. Если этот флаг не задан, по умолчанию используется "localhost:8080"
     }
 
     if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
@@ -58,7 +58,8 @@ func ParseFlags() (time.Duration, time.Duration, string) {
         log.Fatalf("Неизвестный флаг или аргумент: %v", flag.Args())
     }
 
-    return time.Duration(pollInterval) * time.Second,
-        time.Duration(reportInterval) * time.Second,
-        addr
+// Преобразуем интервалы в объекты типа Duration и возвращаем результат
+return time.Duration(pollInterval) * time.Second,  // Преобразуем значение pollInterval в Duration (секунды)
+    time.Duration(reportInterval) * time.Second,   // Преобразуем значение reportInterval в Duration (секунды)
+    addr                                          // Возвращаем адрес сервера
 }
