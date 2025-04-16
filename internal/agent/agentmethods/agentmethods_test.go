@@ -19,7 +19,7 @@ func TestNewAgent(t *testing.T) {
 		args args
 		want *Agent
 	}{
-
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -44,7 +44,7 @@ func TestAgent_CollectMetrics(t *testing.T) {
 		name   string
 		fields fields
 	}{
-
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -62,7 +62,7 @@ func TestAgent_CollectMetrics(t *testing.T) {
 	}
 }
 
-func TestAgent_SendMetrics(t *testing.T) {
+func TestAgent_SendCollectedMetrics(t *testing.T) {
 	type fields struct {
 		gauges         map[string]float64
 		counters       map[string]int64
@@ -76,7 +76,7 @@ func TestAgent_SendMetrics(t *testing.T) {
 		name   string
 		fields fields
 	}{
-
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -89,12 +89,12 @@ func TestAgent_SendMetrics(t *testing.T) {
 				reportInterval: tt.fields.reportInterval,
 				addr:           tt.fields.addr,
 			}
-			a.SendMetrics()
+			a.SendCollectedMetrics()
 		})
 	}
 }
 
-func TestSendMetric(t *testing.T) {
+func TestSendMetricToServer(t *testing.T) {
 	type args struct {
 		client *http.Client
 		url    string
@@ -103,11 +103,11 @@ func TestSendMetric(t *testing.T) {
 		name string
 		args args
 	}{
-
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			SendMetric(tt.args.client, tt.args.url)
+			SendMetricToServer(tt.args.client, tt.args.url)
 		})
 	}
 }
