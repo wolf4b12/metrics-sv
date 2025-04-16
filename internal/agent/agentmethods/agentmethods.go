@@ -1,32 +1,27 @@
+// github.com/wolf4b12/metrics-sv.git/internal/agent/agentmethods/agent.go
+
 package agentmethods
 
 import (
     "fmt"
     "log"
     "net/http"
-    "runtime"
+//    "runtime"
     "sync"
     "time"
     metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metrics"
 )
 
-// Определим интерфейс коллектора метрик
-type MetricsCollector interface {
-    CollectMetrics()
-}
+// Основные интерфейсы и структура сохраняются прежними
 
-// Определим интерфейс отправителя метрик
 type MetricsSender interface {
     SendCollectedMetrics()
 }
 
-// Объединяем оба интерфейса в общий интерфейс агента
 type AgentInterface interface {
-    MetricsCollector
     MetricsSender
 }
 
-// Структура нашего агента
 type Agent struct {
     gauges         map[string]float64
     counters       map[string]int64
@@ -37,7 +32,8 @@ type Agent struct {
     addr           string
 }
 
-// Конструктор агента
+// Новый конструктор агента остаётся прежним
+
 func NewAgent(poll, report time.Duration, addr string) *Agent {
     return &Agent{
         gauges:         make(map[string]float64),
@@ -49,37 +45,12 @@ func NewAgent(poll, report time.Duration, addr string) *Agent {
     }
 }
 
-// Реализация метода CollectionMetrics
+// Теперь метод делегирует выполнение сборщику метрик из пакета metrics
 func (a *Agent) CollectMetrics() {
-    var memStats runtime.MemStats
-
-    for {
-        runtime.ReadMemStats(&memStats)
-
-        a.mu.Lock()
-
-        // Получаем runtime-метрики
-        runtimeMetrics := metrics.GetRuntimeMetricsGauge(memStats)
-        for key, value := range runtimeMetrics {
-            a.gauges[key] = value
-        }
-
-        // Получаем кастомные метрики
-        customMetrics := metrics.GetCustomMetrics()
-        for key, value := range customMetrics {
-            a.counters[key] = value
-        }
-
-        // Обновляем счётчик поллов
-        a.pollCount++
-        a.counters["PollCount"] = a.pollCount
-
-        a.mu.Unlock()
-        time.Sleep(a.pollInterval)
-    }
+    metrics.CollectMetrics(a.mu, a.gauges, a.counters, a.pollInterval)
 }
 
-// Реализация метода SendCollectedMetrics
+// Методы отправки метрик остаются прежними
 func (a *Agent) SendCollectedMetrics() {
     client := &http.Client{Timeout: 5 * time.Second}
     baseURL := fmt.Sprintf("http://%s/update", a.addr)
@@ -118,5 +89,5 @@ func SendMetricToServer(client *http.Client, url string) {
     }
 }
 
-// Проверка соответствия типа структуры типу интерфейса
+// Проверка правильности интерфейсов
 var _ AgentInterface = (*Agent)(nil)
