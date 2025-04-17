@@ -32,7 +32,7 @@ func CollectMetrics(mu *sync.Mutex, gauges map[string]float64, counters map[stri
             counters[key] = value
         }
 
-        // Обновляем счётчик колла
+        // Обновляем счётчик
         pollCount := counters["PollCount"]
         pollCount++
         counters["PollCount"] = pollCount

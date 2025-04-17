@@ -1,12 +1,9 @@
-// github.com/wolf4b12/metrics-sv.git/internal/agent/agentmethods/agent.go
-
 package agentmethods
 
 import (
     "fmt"
     "log"
     "net/http"
-//    "runtime"
     "sync"
     "time"
     metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metrics"
@@ -58,13 +55,13 @@ func (a *Agent) SendCollectedMetrics() {
     for {
         a.mu.Lock()
 
-        // Отправляем данные по гейтикам
+        // Отправляем данные по gauge
         for name, value := range a.gauges {
             url := fmt.Sprintf("%s/gauge/%s/%f", baseURL, name, value)
             go SendMetricToServer(client, url)
         }
 
-        // Отправляем данные по контрметрикам
+        // Отправляем данные по counter
         for name, value := range a.counters {
             url := fmt.Sprintf("%s/counter/%s/%d", baseURL, name, value)
             go SendMetricToServer(client, url)
@@ -91,3 +88,5 @@ func SendMetricToServer(client *http.Client, url string) {
 
 // Проверка правильности интерфейсов
 var _ AgentInterface = (*Agent)(nil)
+
+
