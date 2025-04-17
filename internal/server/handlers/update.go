@@ -4,12 +4,17 @@ import (
     "net/http"
     "strings"
     "strconv"
-    "github.com/wolf4b12/metrics-sv.git/internal/server/storage" // Импортируем пользовательский пакет storage
-) 
+    "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
+)
 
+// UpdateStorage интерфейс для обновления метрик
+type UpdateStorage interface {
+    UpdateGauge(name string, value float64)
+    UpdateCounter(name string, value int64)
+}
 
 // UpdateHandler — обработчик для обновления метрик
-func UpdateHandler(storage storage.Storage) http.HandlerFunc {
+func UpdateHandler(storage UpdateStorage) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         w.Header().Set("Content-Type", "text/plain; charset=utf-8")
         
@@ -27,7 +32,7 @@ func UpdateHandler(storage storage.Storage) http.HandlerFunc {
         metricType, metricName, metricValue := pathParts[0], pathParts[1], pathParts[2]
 
         switch metricType {
-        case "gauge":
+        case constant.MetricTypeGauge:
             value, err := strconv.ParseFloat(metricValue, 64)
             if err != nil {
                 w.WriteHeader(http.StatusBadRequest)
@@ -35,7 +40,7 @@ func UpdateHandler(storage storage.Storage) http.HandlerFunc {
             }
             storage.UpdateGauge(metricName, value)
 
-        case "counter":
+        case constant.MetricTypeCounter:
             value, err := strconv.ParseInt(metricValue, 10, 64)
             if err != nil {
                 w.WriteHeader(http.StatusBadRequest)
@@ -51,5 +56,3 @@ func UpdateHandler(storage storage.Storage) http.HandlerFunc {
         w.WriteHeader(http.StatusOK)
     }
 }
-
-

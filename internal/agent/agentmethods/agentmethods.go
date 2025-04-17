@@ -3,14 +3,21 @@ package agentmethods
 import (
     "fmt"
     "log"
-    "math/rand"
     "net/http"
-    "runtime"
     "sync"
     "time"
+    metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metrics"
 )
 
+// Основные интерфейсы и структура сохраняются прежними
 
+type MetricsSender interface {
+    SendCollectedMetrics()
+}
+
+type AgentInterface interface {
+    MetricsSender
+}
 
 type Agent struct {
     gauges         map[string]float64
@@ -22,7 +29,7 @@ type Agent struct {
     addr           string
 }
 
-
+// Новый конструктор агента остаётся прежним
 
 func NewAgent(poll, report time.Duration, addr string) *Agent {
     return &Agent{
@@ -35,71 +42,29 @@ func NewAgent(poll, report time.Duration, addr string) *Agent {
     }
 }
 
-
-
+// Теперь метод делегирует выполнение сборщику метрик из пакета metrics
 func (a *Agent) CollectMetrics() {
-    var memStats runtime.MemStats
-
-    for {
-        runtime.ReadMemStats(&memStats)
-
-        a.mu.Lock()
-
-        // Runtime gauge metrics
-        a.gauges["Alloc"] = float64(memStats.Alloc)
-        a.gauges["BuckHashSys"] = float64(memStats.BuckHashSys)
-        a.gauges["Frees"] = float64(memStats.Frees)
-        a.gauges["GCCPUFraction"] = memStats.GCCPUFraction
-        a.gauges["GCSys"] = float64(memStats.GCSys)
-        a.gauges["HeapAlloc"] = float64(memStats.HeapAlloc)
-        a.gauges["HeapIdle"] = float64(memStats.HeapIdle)
-        a.gauges["HeapInuse"] = float64(memStats.HeapInuse)
-        a.gauges["HeapObjects"] = float64(memStats.HeapObjects)
-        a.gauges["HeapReleased"] = float64(memStats.HeapReleased)
-        a.gauges["HeapSys"] = float64(memStats.HeapSys)
-        a.gauges["LastGC"] = float64(memStats.LastGC)
-        a.gauges["Lookups"] = float64(memStats.Lookups)
-        a.gauges["MCacheInuse"] = float64(memStats.MCacheInuse)
-        a.gauges["MCacheSys"] = float64(memStats.MCacheSys)
-        a.gauges["MSpanInuse"] = float64(memStats.MSpanInuse)
-        a.gauges["MSpanSys"] = float64(memStats.MSpanSys)
-        a.gauges["Mallocs"] = float64(memStats.Mallocs)
-        a.gauges["NextGC"] = float64(memStats.NextGC)
-        a.gauges["NumForcedGC"] = float64(memStats.NumForcedGC)
-        a.gauges["NumGC"] = float64(memStats.NumGC)
-        a.gauges["OtherSys"] = float64(memStats.OtherSys)
-        a.gauges["PauseTotalNs"] = float64(memStats.PauseTotalNs)
-        a.gauges["StackInuse"] = float64(memStats.StackInuse)
-        a.gauges["StackSys"] = float64(memStats.StackSys)
-        a.gauges["Sys"] = float64(memStats.Sys)
-        a.gauges["TotalAlloc"] = float64(memStats.TotalAlloc)
-
-        // Custom metrics
-        a.gauges["RandomValue"] = rand.Float64()
-        a.pollCount++
-        a.counters["PollCount"] = a.pollCount
-        a.mu.Unlock()
-        time.Sleep(a.pollInterval)
-    }
+    metrics.CollectMetrics(a.mu, a.gauges, a.counters, a.pollInterval)
 }
 
-func (a *Agent) SendMetrics() {
+// Методы отправки метрик остаются прежними
+func (a *Agent) SendCollectedMetrics() {
     client := &http.Client{Timeout: 5 * time.Second}
     baseURL := fmt.Sprintf("http://%s/update", a.addr)
 
     for {
         a.mu.Lock()
 
-        // Send gauge metrics
+        // Отправляем данные по gauge
         for name, value := range a.gauges {
             url := fmt.Sprintf("%s/gauge/%s/%f", baseURL, name, value)
-            go SendMetric(client, url)
+            go SendMetricToServer(client, url)
         }
 
-        // Send counter metrics
+        // Отправляем данные по counter
         for name, value := range a.counters {
             url := fmt.Sprintf("%s/counter/%s/%d", baseURL, name, value)
-            go SendMetric(client, url)
+            go SendMetricToServer(client, url)
         }
 
         a.mu.Unlock()
@@ -107,15 +72,21 @@ func (a *Agent) SendMetrics() {
     }
 }
 
-func SendMetric(client *http.Client, url string) {
+// Вспомогательная функция отправки метрик на сервер
+func SendMetricToServer(client *http.Client, url string) {
     resp, err := client.Post(url, "text/plain", nil)
     if err != nil {
-        log.Printf("Error sending metric: %v\n", err)
+        log.Printf("Ошибка отправки метрики: %v\n", err)
         return
     }
     defer resp.Body.Close()
 
     if resp.StatusCode != http.StatusOK {
-        log.Printf("Unexpected status code: %d\n", resp.StatusCode)
+        log.Printf("Непредвиденный статус HTTP-кода: %d\n", resp.StatusCode)
     }
 }
+
+// Проверка правильности интерфейсов
+var _ AgentInterface = (*Agent)(nil)
+
+
