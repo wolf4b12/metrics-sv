@@ -85,8 +85,8 @@
     
         for range ticker.C {
             a.mu.Lock()
-            
-            // Получаем объединенный список метрик
+    
+            // Обрабатываем объединение метрик
             var metricsSlice []Metrics
             for _, gauge := range a.Gauges {
                 if gauge.Value == nil {
@@ -111,14 +111,14 @@
                 })
             }
     
-            // Если метрики отсутствуют, пропускаем этот шаг
+            // Пропускаем отправку, если метрики отсутствуют
             if len(metricsSlice) == 0 {
                 log.Println("Нет собранных метрик для отправки.")
                 a.mu.Unlock()
                 continue
             }
     
-            // Преобразование метрик в JSON
+            // Преобразовываем метрики в JSON
             data, err := json.Marshal(metricsSlice)
             if err != nil {
                 log.Printf("Ошибка преобразования метрик в JSON: %v\n", err)
@@ -126,7 +126,7 @@
                 continue
             }
     
-            // Отправляем метрики
+            // Формируем запрос
             url := fmt.Sprintf("http://%s/update", a.addr)
             req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
             if err != nil {
@@ -136,6 +136,7 @@
             }
             req.Header.Set("Content-Type", "application/json")
     
+            // Выполняем HTTP-запрос
             resp, err := a.client.Do(req)
             if err != nil {
                 log.Printf("Ошибка отправки метрик: %v\n", err)
@@ -144,7 +145,7 @@
             }
             defer resp.Body.Close()
     
-            // Проверка статуса ответа сервера
+            // Проверяем статус ответа
             if resp.StatusCode != http.StatusOK {
                 log.Printf("Получен неожиданный статус-код (%d)\n", resp.StatusCode)
             }
