@@ -45,8 +45,8 @@ func (a *Agent) CollectMetrics() {
         a.mu.Lock()
 
         // Чистка старых коллекций перед сборкой новых данных
-        a.Gauges = a.Gauges[:0]
-        a.Counters = a.Counters[:0]
+//        a.Gauges = a.Gauges[:0]
+//        a.Counters = a.Counters[:0]
 
         var memStats runtime.MemStats
         runtime.ReadMemStats(&memStats)
