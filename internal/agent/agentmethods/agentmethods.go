@@ -118,7 +118,7 @@ func (a *Agent) SendCollectedMetrics() {
         }
 
         // Формируем URL для отправки метрик
-        url := fmt.Sprintf("http://%s/update/", a.addr)
+        url := fmt.Sprintf("http://%s/update", a.addr)
         req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
         if err != nil {
             log.Printf("Ошибка формирования запроса: %v\n", err)
