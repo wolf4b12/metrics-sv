@@ -79,78 +79,74 @@
     }
 
 
-    func (a *Agent) SendCollectedMetrics() { // отправляем собранные метрики
+    func (a *Agent) SendCollectedMetrics() {
         ticker := time.NewTicker(a.reportInterval)
-        defer ticker.Stop()
+        defer ticker.Stop() // гарантируем освобождение ресурсов
     
         for range ticker.C {
             a.mu.Lock()
-    
- {
-                // Объединяем все метрики в единый срез
-                var metricsSlice []Metrics
-    
-                // Добавляем gauges (датчики)
-                for _, gauge := range a.Gauges {
-                    if gauge.Value == nil {
-                        log.Printf("Отсутствует обязательное поле 'Value' для датчика '%s'\n", gauge.ID)
-                        continue
-                    }
-                    metricsSlice = append(metricsSlice, Metrics{
-                        ID:    gauge.ID,
-                        MType: "gauge",
-                        Value: gauge.Value,
-                    })
-                }
-    
-                // Добавляем counters (счетчики)
-                for _, counter := range a.Counters {
-                    if counter.Delta == nil {
-                        log.Printf("Отсутствует обязательное поле 'Delta' для счетчика '%s'\n", counter.ID)
-                        continue
-                    }
-                    metricsSlice = append(metricsSlice, Metrics{
-                        ID:    counter.ID,
-                        MType: "counter",
-                        Delta: counter.Delta,
-                    })
-                }
-    
-                // Преобразуем метрики в JSON
-                data, err := json.Marshal(metricsSlice)
-                if err != nil {
-                    log.Printf("Ошибка преобразования метрик в JSON: %v\n", err)
-                    a.mu.Unlock()
+            
+            // Получаем объединенный список метрик
+            var metricsSlice []Metrics
+            for _, gauge := range a.Gauges {
+                if gauge.Value == nil {
+                    log.Printf("Отсутствует обязательное поле 'Value' для датчика '%s'\n", gauge.ID)
                     continue
                 }
-    
-                // Формируем URL для отправки метрик
-                url := fmt.Sprintf("http://%s/update", a.addr)
-    
-                // Создаем POST-запрос
-                req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-                if err != nil {
-                    log.Printf("Ошибка создания запроса: %v\n", err)
-                    a.mu.Unlock()
+                metricsSlice = append(metricsSlice, Metrics{
+                    ID:    gauge.ID,
+                    MType: "gauge",
+                    Value: gauge.Value,
+                })
+            }
+            for _, counter := range a.Counters {
+                if counter.Delta == nil {
+                    log.Printf("Отсутствует обязательное поле 'Delta' для счетчика '%s'\n", counter.ID)
                     continue
                 }
+                metricsSlice = append(metricsSlice, Metrics{
+                    ID:    counter.ID,
+                    MType: "counter",
+                    Delta: counter.Delta,
+                })
+            }
     
-                // Настраиваем заголовок Content-Type
-                req.Header.Set("Content-Type", "application/json")
+            // Если метрики отсутствуют, пропускаем этот шаг
+            if len(metricsSlice) == 0 {
+                log.Println("Нет собранных метрик для отправки.")
+                a.mu.Unlock()
+                continue
+            }
     
-                // Выполняем запрос
-                resp, err := a.client.Do(req)
-                if err != nil {
-                    log.Printf("Ошибка отправки метрик: %v\n", err)
-                    a.mu.Unlock()
-                    continue
-                }
-                defer resp.Body.Close()
+            // Преобразование метрик в JSON
+            data, err := json.Marshal(metricsSlice)
+            if err != nil {
+                log.Printf("Ошибка преобразования метрик в JSON: %v\n", err)
+                a.mu.Unlock()
+                continue
+            }
     
-                // Проверяем статус ответа
-                if resp.StatusCode != http.StatusOK {
-                    log.Printf("Получен неожиданный статус-код (%d)\n", resp.StatusCode)
-                }
+            // Отправляем метрики
+            url := fmt.Sprintf("http://%s/update", a.addr)
+            req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+            if err != nil {
+                log.Printf("Ошибка создания запроса: %v\n", err)
+                a.mu.Unlock()
+                continue
+            }
+            req.Header.Set("Content-Type", "application/json")
+    
+            resp, err := a.client.Do(req)
+            if err != nil {
+                log.Printf("Ошибка отправки метрик: %v\n", err)
+                a.mu.Unlock()
+                continue
+            }
+            defer resp.Body.Close()
+    
+            // Проверка статуса ответа сервера
+            if resp.StatusCode != http.StatusOK {
+                log.Printf("Получен неожиданный статус-код (%d)\n", resp.StatusCode)
             }
     
             a.mu.Unlock()
