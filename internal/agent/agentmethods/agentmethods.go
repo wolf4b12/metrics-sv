@@ -145,7 +145,7 @@
                     a.mu.Unlock()
                     continue
                 }
-                defer resp.Body.Close()
+//                defer resp.Body.Close()
     
                 // Проверяем статус ответа
                 if resp.StatusCode != http.StatusOK {
