@@ -7,7 +7,7 @@ import (
     "io"
     "encoding/json"
     "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
-    "github.com/wolf4b12/metrics-sv.git/internal/server/metrics_srv" //Импортируем серуктуру с метриками
+    "github.com/wolf4b12/metrics-sv.git/internal/server/metricssrv" //Импортируем серуктуру с метриками
 )
 
 // UpdateStorage интерфейс для обновления метрик
@@ -82,7 +82,7 @@ func UpdateJSONHandler(storage UpdateStorage) http.HandlerFunc {
         }
 
         // Декодируем JSON как массив метрик
-        var receivedMetrics []metrics_srv.Metrics
+        var receivedMetrics []metricssrv.Metrics
         err = json.Unmarshal(body, &receivedMetrics)
         if err != nil {
             http.Error(w, "Неверная структура JSON", http.StatusBadRequest)

@@ -1,4 +1,4 @@
-package metrics_srv
+package metricssrv
 
 // Метрика для отправки на сервер
 type Metrics struct {
