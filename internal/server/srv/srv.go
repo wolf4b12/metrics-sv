@@ -36,6 +36,7 @@ func NewServer(addr string) *Server {
    router.Post("/update/{metricType}/{metricName}/{metricValue}", handlers.UpdateHandler(storage))
     router.Post("/update", handlers.UpdateJSONHandler(storage))
     router.Get("/value/{metricType}/{metricName}", handlers.ValueHandler(storage))
+    router.Post("/value", handlers.PostValueHandler(storage))
     router.Get("/", handlers.ListMetricsHandler(storage))
 
     return &Server{
