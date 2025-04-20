@@ -81,39 +81,37 @@ func UpdateJSONHandler(storage UpdateStorage) http.HandlerFunc {
             return
         }
 
-        // Декодируем JSON как массив метрик
-        var receivedMetrics []metricssrv.Metrics
-        err = json.Unmarshal(body, &receivedMetrics)
+        // Декодируем JSON как одиночная метрика (а не массив)
+        var receivedMetric metricssrv.Metrics
+        err = json.Unmarshal(body, &receivedMetric)
         if err != nil {
             http.Error(w, "Неверная структура JSON", http.StatusBadRequest)
             return
         }
 
-        // Обрабатываем каждую метрику в массиве
-        for _, metric := range receivedMetrics {
-            switch metric.MType {
-            case constant.MetricTypeGauge:
-                if metric.Value == nil {
-                    http.Error(w, "'value' отсутствует для gauge-метрики", http.StatusOK)
-                    return
-                }
-                storage.UpdateGauge(metric.ID, *metric.Value)
-
-            case constant.MetricTypeCounter:
-                if metric.Delta == nil {
-                    http.Error(w, "'delta' отсутствует для counter-метрики", http.StatusOK)
-                    return
-                }
-                storage.UpdateCounter(metric.ID, *metric.Delta)
-
- //           default:
- //               http.Error(w, "Тип метрики неизвестен", http.StatusBadRequest)
- //               return
+        // Обрабатываем одну метрику
+        switch receivedMetric.MType {
+        case constant.MetricTypeGauge:
+            if receivedMetric.Value == nil {
+                http.Error(w, "'value' отсутствует для gauge-метрики", http.StatusBadRequest)
+                return
             }
+            storage.UpdateGauge(receivedMetric.ID, *receivedMetric.Value)
+
+        case constant.MetricTypeCounter:
+            if receivedMetric.Delta == nil {
+                http.Error(w, "'delta' отсутствует для counter-метрики", http.StatusBadRequest)
+                return
+            }
+            storage.UpdateCounter(receivedMetric.ID, *receivedMetric.Delta)
+
+        default:
+            http.Error(w, "Тип метрики неизвестен", http.StatusBadRequest)
+            return
         }
 
-        // Формирование ответа
-        respData, err := json.Marshal(receivedMetrics)
+        // Формируем ответ
+        respData, err := json.Marshal(receivedMetric)
         if err != nil {
             http.Error(w, "Ошибка формирования ответа", http.StatusInternalServerError)
             return
