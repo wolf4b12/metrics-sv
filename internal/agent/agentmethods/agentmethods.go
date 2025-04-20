@@ -100,7 +100,7 @@ func (a *Agent) SendCollectedMetrics() {
                 continue
             }
             
-
+            resp.Body.Close()
             // Проверяем статус ответа
             if resp.StatusCode != http.StatusOK {
                 log.Printf("Получен неправильный статус-код (%d)\n", resp.StatusCode)
@@ -137,6 +137,7 @@ func (a *Agent) SendCollectedMetrics() {
                 continue
             }
             
+            resp.Body.Close()
 
             // Проверяем статус ответа
             if resp.StatusCode != http.StatusOK {
