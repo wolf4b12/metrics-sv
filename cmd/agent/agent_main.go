@@ -14,12 +14,21 @@ func main() {
 
     poll, report, addr := parseflags.ParseFlags()
     
-    agent := agentmethods.NewAgent(poll, report, addr) // Используем функцию NewAgent из пакета agentmethods
+//   agent := agentmethods.NewAgent(poll, report, addr, false) // Используем функцию NewAgent из пакета agentmethods
 
 
-    go agent.CollectMetrics()
+//    go agent.CollectMetrics()
 
-    go agent.SendCollectedMetrics()
+//    go agent.SendCollectedMetrics()
+
+
+    agent2 := agentmethods.NewAgent(poll, report, addr, true)
+
+
+    go agent2.CollectMetrics()
+    go agent2.SendCollectedMetrics()
+
+
 
     select {} // Keep main goroutine alive
 }
