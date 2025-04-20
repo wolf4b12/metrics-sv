@@ -10,10 +10,6 @@ import (
 
 
 
-
-
-
-
 // GetRuntimeMetricsMap возвращает карту с метриками runtime
 func GetRuntimeMetricsGauge(memStats runtime.MemStats) map[string]float64 {
     return map[string]float64{

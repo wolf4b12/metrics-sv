@@ -13,7 +13,6 @@ import (
     metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metricsagent"
 )
 
-
 // Агент для сбора и отправки метрик
 type Agent struct {
     Gauges         []metrics.Metrics
@@ -45,8 +44,8 @@ func (a *Agent) CollectMetrics() {
         a.mu.Lock()
 
         // Чистка старых коллекций перед сборкой новых данных
-//        a.Gauges = a.Gauges[:0]
-//        a.Counters = a.Counters[:0]
+        a.Gauges = a.Gauges[:0]
+        a.Counters = a.Counters[:0]
 
         var memStats runtime.MemStats
         runtime.ReadMemStats(&memStats)
@@ -56,12 +55,6 @@ func (a *Agent) CollectMetrics() {
         for key, value := range runtimeMetrics {
             a.Gauges = append(a.Gauges, metrics.Metrics{ID: key, MType: "gauge", Value: &value})
         }
-
-        // Кастомные метрики добавляются в Counters
-//        customMetrics := metrics.GetCustomMetrics()
- //       for key, value := range customMetrics {
- //           a.Counters = append(a.Counters, metrics.Metrics{ID: key, MType: "counter", Delta: &value})
-       // }
 
         // Счётчик опроса PollCount
         a.pollCount++
@@ -77,74 +70,81 @@ func (a *Agent) SendCollectedMetrics() {
     for {
         a.mu.Lock()
 
-        // Объединяем метрики
-        var metricsSlice []metrics.Metrics
+        // Проходим по каждой метрике отдельно
         for _, gauge := range a.Gauges {
             if gauge.Value == nil {
                 log.Printf("Отсутствует обязательный параметр 'Value' для сенсора '%s'\n", gauge.ID)
                 continue
             }
-            metricsSlice = append(metricsSlice, metrics.Metrics{
-                ID:    gauge.ID,
-                MType: "gauge",
-                Value: gauge.Value,
-            })
+
+            // Маршализируем единичную метрику в JSON
+            data, err := json.Marshal(gauge)
+            if err != nil {
+                log.Printf("Ошибка маршализации метрики в JSON: %v\n", err)
+                continue
+            }
+
+            // Формируем URL для отправки метрики
+            url := fmt.Sprintf("http://%s/update/", a.addr)
+            req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+            if err != nil {
+                log.Printf("Ошибка формирования запроса: %v\n", err)
+                continue
+            }
+            req.Header.Set("Content-Type", "application/json")
+
+            // Выполняем запрос
+            resp, err := a.client.Do(req)
+            if err != nil {
+                log.Printf("Ошибка отправки метрики: %v\n", err)
+                continue
+            }
+            defer resp.Body.Close()
+
+            // Проверяем статус ответа
+            if resp.StatusCode != http.StatusOK {
+                log.Printf("Получен неправильный статус-код (%d)\n", resp.StatusCode)
+            }
         }
+
+        // Повторяем аналогичную процедуру для счетчиков
         for _, counter := range a.Counters {
             if counter.Delta == nil {
                 log.Printf("Отсутствует обязательный параметр 'Delta' для счетчика '%s'\n", counter.ID)
                 continue
             }
-            metricsSlice = append(metricsSlice, metrics.Metrics{
-                ID:    counter.ID,
-                MType: "counter",
-                Delta: counter.Delta,
-            })
+
+            // Маршализируем единичную метрику в JSON
+            data, err := json.Marshal(counter)
+            if err != nil {
+                log.Printf("Ошибка маршализации метрики в JSON: %v\n", err)
+                continue
+            }
+
+            // Формируем URL для отправки метрики
+            url := fmt.Sprintf("http://%s/update/", a.addr)
+            req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+            if err != nil {
+                log.Printf("Ошибка формирования запроса: %v\n", err)
+                continue
+            }
+            req.Header.Set("Content-Type", "application/json")
+
+            // Выполняем запрос
+            resp, err := a.client.Do(req)
+            if err != nil {
+                log.Printf("Ошибка отправки метрики: %v\n", err)
+                continue
+            }
+            defer resp.Body.Close()
+
+            // Проверяем статус ответа
+            if resp.StatusCode != http.StatusOK {
+                log.Printf("Получен неправильный статус-код (%d)\n", resp.StatusCode)
+            }
         }
 
-        // Пропускаем отправку, если метрики отсутствуют
-        if len(metricsSlice) == 0 {
-            log.Println("Нет собранных метрик для отправки.")
-            a.mu.Unlock()
-            continue
-        }
-
-        // Маршализируем метрики в JSON
-        data, err := json.Marshal(metricsSlice)
-        if err != nil {
-            log.Printf("Ошибка маршализации метрик в JSON: %v\n", err)
-            a.mu.Unlock()
-            continue
-        }
-
-        // Формируем URL для отправки метрик
-        url := fmt.Sprintf("http://%s/update/", a.addr)
-        req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-        if err != nil {
-            log.Printf("Ошибка формирования запроса: %v\n", err)
-            a.mu.Unlock()
-            continue
-        }
-        req.Header.Set("Content-Type", "application/json")
-
-        // Выполняем запрос
-        resp, err := a.client.Do(req)
-        if err != nil {
-            log.Printf("Ошибка отправки метрик: %v\n", err)
-            a.mu.Unlock()
-            continue
-        }
-
-        // Читаем тело ответа и проверяем статус
-   //     if resp.StatusCode != http.StatusOK {
-   //         log.Printf("Получен неправильный статус-код (%d)\n", resp.StatusCode)
-  //      }
-
-        // Освобождаем блокировки
         a.mu.Unlock()
-
-        // Закрываем соединение с телом ответа (делается за пределами цикла)
-        resp.Body.Close()
 
         // Ждем указанный интервал
         time.Sleep(a.reportInterval)
