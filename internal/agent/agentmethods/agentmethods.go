@@ -99,7 +99,7 @@ func (a *Agent) SendCollectedMetrics() {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
                 continue
             }
-            defer resp.Body.Close()
+            
 
             // Проверяем статус ответа
             if resp.StatusCode != http.StatusOK {
@@ -136,7 +136,7 @@ func (a *Agent) SendCollectedMetrics() {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
                 continue
             }
-            defer resp.Body.Close()
+            
 
             // Проверяем статус ответа
             if resp.StatusCode != http.StatusOK {
