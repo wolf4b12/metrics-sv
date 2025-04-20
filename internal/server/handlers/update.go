@@ -94,14 +94,14 @@ func UpdateJSONHandler(storage UpdateStorage) http.HandlerFunc {
             switch metric.MType {
             case constant.MetricTypeGauge:
                 if metric.Value == nil {
-                    http.Error(w, "'value' отсутствует для gauge-метрики", http.StatusBadRequest)
+                    http.Error(w, "'value' отсутствует для gauge-метрики", http.StatusOK)
                     return
                 }
                 storage.UpdateGauge(metric.ID, *metric.Value)
 
             case constant.MetricTypeCounter:
                 if metric.Delta == nil {
-                    http.Error(w, "'delta' отсутствует для counter-метрики", http.StatusBadRequest)
+                    http.Error(w, "'delta' отсутствует для counter-метрики", http.StatusOK)
                     return
                 }
                 storage.UpdateCounter(metric.ID, *metric.Delta)
