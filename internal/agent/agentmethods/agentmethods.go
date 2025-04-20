@@ -33,7 +33,7 @@
         useJsonFormat  bool // новое поле для переключения формата отправки
     }
 
-    func NewAgent(poll, report time.Duration, addr string, useJson bool) *Agent {
+    func NewAgent(poll, report time.Duration, addr string) *Agent {
         return &Agent{
             Gauges:         make([]Metrics, 0),
             Counters:       make([]Metrics, 0),

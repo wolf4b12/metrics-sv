@@ -22,7 +22,7 @@ func main() {
 //    go agent.SendCollectedMetrics()
 
 
-    agent2 := agentmethods.NewAgent(poll, report, addr, true)
+    agent2 := agentmethods.NewAgent(poll, report, addr)
 
 
     go agent2.CollectMetrics()
