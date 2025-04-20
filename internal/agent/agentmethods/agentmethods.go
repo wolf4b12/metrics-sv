@@ -15,10 +15,10 @@ import (
 
 // Метрика для отправки на сервер
 type Metrics struct {
-    ID    string   `json:"id"`
-    MType string   `json:"type"`
-    Delta *int64   `json:"delta,omitempty"`
-    Value *float64 `json:"value,omitempty"`
+    ID    string   `json:"id"`              // Имя метрики
+    MType string   `json:"type"`            // Тип метрики (gauge или counter)
+    Delta *int64   `json:"delta,omitempty"` // Изменение значения (для счётчиков)
+    Value *float64 `json:"value,omitempty"` // Текущее значение (для датчиков)
 }
 
 // Агент для сбора и отправки метрик
@@ -33,7 +33,7 @@ type Agent struct {
     client         *http.Client
 }
 
-// Создание нового агента
+// Новый агент
 func NewAgent(poll, report time.Duration, addr string) *Agent {
     return &Agent{
         Gauges:         make([]Metrics, 0),
@@ -81,13 +81,10 @@ func (a *Agent) CollectMetrics() {
 
 // Отправка собранных метрик
 func (a *Agent) SendCollectedMetrics() {
-    ticker := time.NewTicker(a.reportInterval)
-    defer ticker.Stop() // Гарантия освобождения ресурсов после завершения функции
-
-    for range ticker.C {
+    for {
         a.mu.Lock()
 
-        // Объединение метрик
+        // Получаем объединённый список метрик
         var metricsSlice []Metrics
         for _, gauge := range a.Gauges {
             if gauge.Value == nil {
@@ -112,20 +109,22 @@ func (a *Agent) SendCollectedMetrics() {
             })
         }
 
-        // Пустой срез метрик
+        // Если метрики отсутствуют, пропускаем этот шаг
         if len(metricsSlice) == 0 {
-            log.Println("Метрики отсутствуют.")
+            log.Println("Нет собранных метрик для отправки.")
             a.mu.Unlock()
             continue
         }
 
+        // Маршализация метрик в JSON
         data, err := json.Marshal(metricsSlice)
         if err != nil {
-            log.Printf("Ошибка маршалинга метрик в JSON: %v\n", err)
+            log.Printf("Ошибка маршализации метрик в JSON: %v\n", err)
             a.mu.Unlock()
             continue
         }
 
+        // Формирование запроса
         url := fmt.Sprintf("http://%s/update", a.addr)
         req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
         if err != nil {
@@ -135,6 +134,7 @@ func (a *Agent) SendCollectedMetrics() {
         }
         req.Header.Set("Content-Type", "application/json")
 
+        // Выполнение запроса
         resp, err := a.client.Do(req)
         if err != nil {
             log.Printf("Ошибка отправки метрик: %v\n", err)
@@ -143,10 +143,14 @@ func (a *Agent) SendCollectedMetrics() {
         }
         defer resp.Body.Close()
 
+        // Проверка статуса ответа
         if resp.StatusCode != http.StatusOK {
-            log.Printf("Непредвиденный статус-кода (%d)\n", resp.StatusCode)
+            log.Printf("Получен непредвиденный статус-код (%d)\n", resp.StatusCode)
         }
 
         a.mu.Unlock()
+
+        // Ждем отчетный интервал перед следующей отправкой
+        time.Sleep(a.reportInterval)
     }
 }
