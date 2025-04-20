@@ -7,6 +7,7 @@ import (
     "io"
     "encoding/json"
     "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
+    "github.com/wolf4b12/metrics-sv.git/internal/server/metrics_srv" //Импортируем серуктуру с метриками
 )
 
 // UpdateStorage интерфейс для обновления метрик
@@ -14,13 +15,6 @@ type UpdateStorage interface {
     UpdateGauge(name string, value float64)
     UpdateCounter(name string, value int64)
 }
-
-type Metrics struct {
-    ID    string   `json:"id"`              // имя метрики
-    MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-    Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-    Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
- }
 
 // UpdateHandler — обработчик для обновления метрик
 func UpdateHandler(storage UpdateStorage) http.HandlerFunc {
@@ -88,7 +82,7 @@ func UpdateJSONHandler(storage UpdateStorage) http.HandlerFunc {
         }
 
         // Декодируем JSON как массив метрик
-        var receivedMetrics []Metrics
+        var receivedMetrics []metrics_srv.Metrics
         err = json.Unmarshal(body, &receivedMetrics)
         if err != nil {
             http.Error(w, "Неверная структура JSON", http.StatusBadRequest)

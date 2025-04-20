@@ -1,4 +1,4 @@
-package metrics
+package metrics_ag
 
 import (
 
@@ -7,6 +7,13 @@ import (
  "math/rand"
 
 )
+
+
+
+
+
+
+
 // GetRuntimeMetricsMap возвращает карту с метриками runtime
 func GetRuntimeMetricsGauge(memStats runtime.MemStats) map[string]float64 {
     return map[string]float64{

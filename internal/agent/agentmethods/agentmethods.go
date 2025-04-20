@@ -10,7 +10,7 @@ import (
     "sync"
     "time"
 
-    metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metrics"
+    metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metrics_agent"
 )
 
 // Метрика для отправки на сервер
