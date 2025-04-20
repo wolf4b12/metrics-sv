@@ -30,7 +30,7 @@
         reportInterval time.Duration
         addr           string
         client         *http.Client
-        useJsonFormat  bool // новое поле для переключения формата отправки
+//        useJsonFormat  bool // новое поле для переключения формата отправки
     }
 
     func NewAgent(poll, report time.Duration, addr string) *Agent {
