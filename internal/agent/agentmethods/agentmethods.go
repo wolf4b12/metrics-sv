@@ -42,7 +42,7 @@
             addr:           addr,
             mu:             &sync.Mutex{},
             client:         &http.Client{Timeout: 5 * time.Second}, // используем общий клиент
-//            useJsonFormat:  useJson,                                // задаём формат отправки
+//            useJsonFormat:  useJson,                                // задаём формат отправки 
         }
     }
 
