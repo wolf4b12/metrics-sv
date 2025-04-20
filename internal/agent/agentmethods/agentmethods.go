@@ -58,10 +58,10 @@ func (a *Agent) CollectMetrics() {
         }
 
         // Кастомные метрики добавляются в Counters
-        customMetrics := metrics.GetCustomMetrics()
-        for key, value := range customMetrics {
-            a.Counters = append(a.Counters, metrics.Metrics{ID: key, MType: "counter", Delta: &value})
-        }
+//        customMetrics := metrics.GetCustomMetrics()
+ //       for key, value := range customMetrics {
+ //           a.Counters = append(a.Counters, metrics.Metrics{ID: key, MType: "counter", Delta: &value})
+       // }
 
         // Счётчик опроса PollCount
         a.pollCount++

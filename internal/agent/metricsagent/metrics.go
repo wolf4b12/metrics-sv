@@ -49,8 +49,8 @@ func GetRuntimeMetricsGauge(memStats runtime.MemStats) map[string]float64 {
 }
 
 // GetRuntimeMetricsMap возвращает карту с custom метриками
-func GetCustomMetrics() map[string]int64 {
-    return map[string]int64{
-        "RandomValue": int64(rand.Intn(1000000)), // Кастомная метрика RandomValue
-    }
-}
+//func GetCustomMetrics() map[string]int64 {
+//    return map[string]int64{
+//        "RandomValue": int64(rand.Intn(1000000)), // Кастомная метрика RandomValue
+//    }
+//}
