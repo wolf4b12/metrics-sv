@@ -4,6 +4,8 @@ import (
     "net/http"
     "strings"
     "strconv"
+    "io"
+    "encoding/json"
     "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
 )
 
@@ -12,6 +14,13 @@ type UpdateStorage interface {
     UpdateGauge(name string, value float64)
     UpdateCounter(name string, value int64)
 }
+
+type Metrics struct {
+    ID    string   `json:"id"`              // имя метрики
+    MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+    Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+    Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+ }
 
 // UpdateHandler — обработчик для обновления метрик
 func UpdateHandler(storage UpdateStorage) http.HandlerFunc {
@@ -54,5 +63,68 @@ func UpdateHandler(storage UpdateStorage) http.HandlerFunc {
         }
 
         w.WriteHeader(http.StatusOK)
+    }
+}
+
+
+
+
+
+func UpdateJSONHandler(storage UpdateStorage) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "application/json")
+
+        if r.Method != http.MethodPost {
+            http.Error(w, "Только POST-запросы разрешены", http.StatusMethodNotAllowed)
+            return
+        }
+
+        // Читаем тело запроса
+        body, err := io.ReadAll(r.Body)
+        defer r.Body.Close()
+        if err != nil {
+            http.Error(w, "Ошибка чтения тела запроса", http.StatusInternalServerError)
+            return
+        }
+
+        // Декодируем JSON как массив метрик
+        var receivedMetrics []Metrics
+        err = json.Unmarshal(body, &receivedMetrics)
+        if err != nil {
+            http.Error(w, "Неверная структура JSON", http.StatusBadRequest)
+            return
+        }
+
+        // Обрабатываем каждую метрику в массиве
+        for _, metric := range receivedMetrics {
+            switch metric.MType {
+            case constant.MetricTypeGauge:
+                if metric.Value == nil {
+                    http.Error(w, "'value' отсутствует для gauge-метрики", http.StatusBadRequest)
+                    return
+                }
+                storage.UpdateGauge(metric.ID, *metric.Value)
+
+            case constant.MetricTypeCounter:
+                if metric.Delta == nil {
+                    http.Error(w, "'delta' отсутствует для counter-метрики", http.StatusBadRequest)
+                    return
+                }
+                storage.UpdateCounter(metric.ID, *metric.Delta)
+
+            default:
+                http.Error(w, "Тип метрики неизвестен", http.StatusBadRequest)
+                return
+            }
+        }
+
+        // Формирование ответа
+        respData, err := json.Marshal(receivedMetrics)
+        if err != nil {
+            http.Error(w, "Ошибка формирования ответа", http.StatusInternalServerError)
+            return
+        }
+
+        w.Write(respData)
     }
 }

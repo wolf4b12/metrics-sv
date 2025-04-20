@@ -33,7 +33,8 @@ func NewServer(addr string) *Server {
     router.Use(lgr.LoggingMiddleware(logger)) // Используем middleware из пакета logger
 
     router.Use(middleware.Logger)
-    router.Post("/update/{metricType}/{metricName}/{metricValue}", handlers.UpdateHandler(storage))
+   router.Post("/update/{metricType}/{metricName}/{metricValue}", handlers.UpdateHandler(storage))
+    router.Post("/update", handlers.UpdateJSONHandler(storage))
     router.Get("/value/{metricType}/{metricName}", handlers.ValueHandler(storage))
     router.Get("/", handlers.ListMetricsHandler(storage))
 
