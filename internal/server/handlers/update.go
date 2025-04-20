@@ -120,5 +120,6 @@ func UpdateJSONHandler(storage UpdateStorage) http.HandlerFunc {
         }
 
         w.Write(respData)
+        w.WriteHeader(http.StatusOK)
     }
 }
