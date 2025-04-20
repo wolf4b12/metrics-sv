@@ -106,9 +106,9 @@ func UpdateJSONHandler(storage UpdateStorage) http.HandlerFunc {
                 }
                 storage.UpdateCounter(metric.ID, *metric.Delta)
 
-            default:
-                http.Error(w, "Тип метрики неизвестен", http.StatusBadRequest)
-                return
+ //           default:
+ //               http.Error(w, "Тип метрики неизвестен", http.StatusBadRequest)
+ //               return
             }
         }
 
