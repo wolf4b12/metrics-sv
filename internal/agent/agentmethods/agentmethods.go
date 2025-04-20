@@ -136,9 +136,9 @@ func (a *Agent) SendCollectedMetrics() {
         }
 
         // Читаем тело ответа и проверяем статус
-        if resp.StatusCode != http.StatusOK {
-            log.Printf("Получен неправильный статус-код (%d)\n", resp.StatusCode)
-        }
+   //     if resp.StatusCode != http.StatusOK {
+   //         log.Printf("Получен неправильный статус-код (%d)\n", resp.StatusCode)
+  //      }
 
         // Освобождаем блокировки
         a.mu.Unlock()
