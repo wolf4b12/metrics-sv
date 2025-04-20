@@ -1,4 +1,4 @@
-package metrics_ag
+package metricsag
 
 // Метрика для отправки на сервер
 type Metrics struct {
