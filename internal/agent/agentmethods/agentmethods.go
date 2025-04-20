@@ -15,10 +15,10 @@ import (
 
 // Метрика для отправки на сервер
 type Metrics struct {
-    ID    string   `json:"id"`              // Имя метрики
-    MType string   `json:"type"`            // Тип метрики (gauge или counter)
-    Delta *int64   `json:"delta,omitempty"` // Изменение значения (для счётчиков)
-    Value *float64 `json:"value,omitempty"` // Текущее значение (для датчиков)
+    ID    string   `json:"id"`              // имя метрики
+    MType string   `json:"type"`            // тип метрики (gauge или counter)
+    Delta *int64   `json:"delta,omitempty"` // изменение значения (для счётчиков)
+    Value *float64 `json:"value,omitempty"` // текущее значение (для датчиков)
 }
 
 // Агент для сбора и отправки метрик
@@ -33,7 +33,7 @@ type Agent struct {
     client         *http.Client
 }
 
-// Новый агент
+// Создание нового агента
 func NewAgent(poll, report time.Duration, addr string) *Agent {
     return &Agent{
         Gauges:         make([]Metrics, 0),
@@ -46,7 +46,7 @@ func NewAgent(poll, report time.Duration, addr string) *Agent {
     }
 }
 
-// Сбор метрик
+// Метод для сбора метрик
 func (a *Agent) CollectMetrics() {
     for {
         a.mu.Lock()
@@ -79,16 +79,16 @@ func (a *Agent) CollectMetrics() {
     }
 }
 
-// Отправка собранных метрик
+// Метод для отправки собранных метрик
 func (a *Agent) SendCollectedMetrics() {
     for {
         a.mu.Lock()
 
-        // Получаем объединённый список метрик
+        // Объединяем метрики
         var metricsSlice []Metrics
         for _, gauge := range a.Gauges {
             if gauge.Value == nil {
-                log.Printf("Отсутствует обязательное поле 'Value' для датчика '%s'\n", gauge.ID)
+                log.Printf("Отсутствует обязательный параметр 'Value' для сенсора '%s'\n", gauge.ID)
                 continue
             }
             metricsSlice = append(metricsSlice, Metrics{
@@ -99,7 +99,7 @@ func (a *Agent) SendCollectedMetrics() {
         }
         for _, counter := range a.Counters {
             if counter.Delta == nil {
-                log.Printf("Отсутствует обязательное поле 'Delta' для счетчика '%s'\n", counter.ID)
+                log.Printf("Отсутствует обязательный параметр 'Delta' для счетчика '%s'\n", counter.ID)
                 continue
             }
             metricsSlice = append(metricsSlice, Metrics{
@@ -109,14 +109,14 @@ func (a *Agent) SendCollectedMetrics() {
             })
         }
 
-        // Если метрики отсутствуют, пропускаем этот шаг
+        // Пропускаем отправку, если метрики отсутствуют
         if len(metricsSlice) == 0 {
             log.Println("Нет собранных метрик для отправки.")
             a.mu.Unlock()
             continue
         }
 
-        // Маршализация метрик в JSON
+        // Маршализируем метрики в JSON
         data, err := json.Marshal(metricsSlice)
         if err != nil {
             log.Printf("Ошибка маршализации метрик в JSON: %v\n", err)
@@ -124,33 +124,36 @@ func (a *Agent) SendCollectedMetrics() {
             continue
         }
 
-        // Формирование запроса
+        // Формируем URL для отправки метрик
         url := fmt.Sprintf("http://%s/update", a.addr)
         req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
         if err != nil {
-            log.Printf("Ошибка создания запроса: %v\n", err)
+            log.Printf("Ошибка формирования запроса: %v\n", err)
             a.mu.Unlock()
             continue
         }
         req.Header.Set("Content-Type", "application/json")
 
-        // Выполнение запроса
+        // Выполняем запрос
         resp, err := a.client.Do(req)
         if err != nil {
             log.Printf("Ошибка отправки метрик: %v\n", err)
             a.mu.Unlock()
             continue
         }
-        defer resp.Body.Close()
 
-        // Проверка статуса ответа
+        // Читаем тело ответа и проверяем статус
         if resp.StatusCode != http.StatusOK {
-            log.Printf("Получен непредвиденный статус-код (%d)\n", resp.StatusCode)
+            log.Printf("Получен неправильный статус-код (%d)\n", resp.StatusCode)
         }
 
+        // Освобождаем блокировки
         a.mu.Unlock()
 
-        // Ждем отчетный интервал перед следующей отправкой
+        // Закрываем соединение с телом ответа (делается за пределами цикла)
+        resp.Body.Close()
+
+        // Ждем указанный интервал
         time.Sleep(a.reportInterval)
     }
 }
