@@ -44,6 +44,7 @@ func GetRuntimeMetricsGauge(memStats runtime.MemStats) map[string]float64 {
         "StackSys":               float64(memStats.StackSys),
         "Sys":                    float64(memStats.Sys),
         "TotalAlloc":             float64(memStats.TotalAlloc),
+        "RandomValue":            float64(rand.Intn(1000000)),
     }
 }
 

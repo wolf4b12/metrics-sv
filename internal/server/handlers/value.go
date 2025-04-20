@@ -70,10 +70,10 @@ func PostValueHandler(storage GetStorage) http.HandlerFunc {
         }
 
         // Проверим, были ли переданы оба необходимых параметра
-        if inputMetric.ID == "" || inputMetric.MType == "" {
-            http.Error(w, "Параметры id и type обязательны", http.StatusBadRequest)
-            return
-        }
+    //    if inputMetric.ID == "" || inputMetric.MType == "" {
+     //        http.Error(w, "Параметры id и type обязательны", http.StatusBadRequest)
+     //       return
+     //   }
 
         // Запрашиваем нужную метрику исходя из типа
         var outputMetric metricssrv.Metrics
