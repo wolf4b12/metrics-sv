@@ -1,155 +1,152 @@
-    package agentmethods
+package agentmethods
 
-    import (
-        "bytes"
-        "encoding/json"
-        "fmt"
-        "log"
-        "net/http"
-        "runtime"
-        "sync"
-        "time"
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
+    "runtime"
+    "sync"
+    "time"
 
-        metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metrics"
-    )
+    metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metrics"
+)
 
-    // Структура метрики для отправки на сервер
-        type Metrics struct {
-            ID    string   `json:"id"`              // имя метрики
-            MType string   `json:"type"`            // тип метрики (gauge или counter)
-            Delta *int64   `json:"delta,omitempty"` // изменение значения (для счётчиков)
-            Value *float64 `json:"value,omitempty"` // текущее значение (для датчиков)
+// Метрика для отправки на сервер
+type Metrics struct {
+    ID    string   `json:"id"`
+    MType string   `json:"type"`
+    Delta *int64   `json:"delta,omitempty"`
+    Value *float64 `json:"value,omitempty"`
+}
+
+// Агент для сбора и отправки метрик
+type Agent struct {
+    Gauges         []Metrics
+    Counters       []Metrics
+    pollCount      int64
+    mu             *sync.Mutex
+    pollInterval   time.Duration
+    reportInterval time.Duration
+    addr           string
+    client         *http.Client
+}
+
+// Создание нового агента
+func NewAgent(poll, report time.Duration, addr string) *Agent {
+    return &Agent{
+        Gauges:         make([]Metrics, 0),
+        Counters:       make([]Metrics, 0),
+        pollInterval:   poll,
+        reportInterval: report,
+        addr:           addr,
+        mu:             &sync.Mutex{},
+        client:         &http.Client{Timeout: 5 * time.Second},
+    }
+}
+
+// Сбор метрик
+func (a *Agent) CollectMetrics() {
+    for {
+        a.mu.Lock()
+
+        // Чистка старых коллекций перед сборкой новых данных
+        a.Gauges = a.Gauges[:0]
+        a.Counters = a.Counters[:0]
+
+        var memStats runtime.MemStats
+        runtime.ReadMemStats(&memStats)
+
+        // Собираем runtime-метрики и добавляем их в Gauges
+        runtimeMetrics := metrics.GetRuntimeMetricsGauge(memStats)
+        for key, value := range runtimeMetrics {
+            a.Gauges = append(a.Gauges, Metrics{ID: key, MType: "gauge", Value: &value})
         }
 
-    type Agent struct {
-        Gauges         []Metrics
-        Counters       []Metrics
-        pollCount      int64
-        mu             *sync.Mutex
-        pollInterval   time.Duration
-        reportInterval time.Duration
-        addr           string
-        client         *http.Client
-//        useJsonFormat  bool // новое поле для переключения формата отправки
-    }
-
-    func NewAgent(poll, report time.Duration, addr string) *Agent {
-        return &Agent{
-            Gauges:         make([]Metrics, 0),
-            Counters:       make([]Metrics, 0),
-            pollInterval:   poll,
-            reportInterval: report,
-            addr:           addr,
-            mu:             &sync.Mutex{},
-            client:         &http.Client{Timeout: 5 * time.Second}, // используем общий клиент
-//            useJsonFormat:  useJson,                                // задаём формат отправки 
+        // Кастомные метрики добавляются в Counters
+        customMetrics := metrics.GetCustomMetrics()
+        for key, value := range customMetrics {
+            a.Counters = append(a.Counters, Metrics{ID: key, MType: "counter", Delta: &value})
         }
+
+        // Счётчик опроса PollCount
+        a.pollCount++
+        a.Counters = append(a.Counters, Metrics{ID: "PollCount", MType: "counter", Delta: &a.pollCount})
+
+        a.mu.Unlock()
+        time.Sleep(a.pollInterval)
     }
+}
 
-    func (a *Agent) CollectMetrics() { // собираем метрики
-        for {
-            a.mu.Lock()
+// Отправка собранных метрик
+func (a *Agent) SendCollectedMetrics() {
+    ticker := time.NewTicker(a.reportInterval)
+    defer ticker.Stop() // Гарантия освобождения ресурсов после завершения функции
 
-            // Чистка старых коллекций перед сборкой новых данных
-            a.Gauges = a.Gauges[:0]
-            a.Counters = a.Counters[:0]
+    for range ticker.C {
+        a.mu.Lock()
 
-            var memStats runtime.MemStats
-            runtime.ReadMemStats(&memStats)
-
-            // Собираем runtime-метрики и добавляем их в Gauges
-            runtimeMetrics := metrics.GetRuntimeMetricsGauge(memStats)
-            for key, value := range runtimeMetrics {
-                a.Gauges = append(a.Gauges, Metrics{ID: key, MType: "gauge", Value: &value})
+        // Объединение метрик
+        var metricsSlice []Metrics
+        for _, gauge := range a.Gauges {
+            if gauge.Value == nil {
+                log.Printf("Отсутствует обязательное поле 'Value' для датчика '%s'\n", gauge.ID)
+                continue
             }
-
-            // Кастомные метрики добавляются в Counters
-            customMetrics := metrics.GetCustomMetrics()
-            for key, value := range customMetrics {
-                a.Counters = append(a.Counters, Metrics{ID: key, MType: "counter", Delta: &value})
+            metricsSlice = append(metricsSlice, Metrics{
+                ID:    gauge.ID,
+                MType: "gauge",
+                Value: gauge.Value,
+            })
+        }
+        for _, counter := range a.Counters {
+            if counter.Delta == nil {
+                log.Printf("Отсутствует обязательное поле 'Delta' для счетчика '%s'\n", counter.ID)
+                continue
             }
+            metricsSlice = append(metricsSlice, Metrics{
+                ID:    counter.ID,
+                MType: "counter",
+                Delta: counter.Delta,
+            })
+        }
 
-            // Счётчик опроса PollCount
-            a.pollCount++
-            a.Counters = append(a.Counters, Metrics{ID: "PollCount", MType: "counter", Delta: &a.pollCount})
-
+        // Пустой срез метрик
+        if len(metricsSlice) == 0 {
+            log.Println("Метрики отсутствуют.")
             a.mu.Unlock()
-            time.Sleep(a.pollInterval)
+            continue
         }
-    }
 
-
-    func (a *Agent) SendCollectedMetrics() {
-        ticker := time.NewTicker(a.reportInterval)
-        defer ticker.Stop() // гарантируем освобождение ресурсов
-    
-        for range ticker.C {
-            a.mu.Lock()
-    
-            // Обрабатываем объединение метрик
-            var metricsSlice []Metrics
-            for _, gauge := range a.Gauges {
-                if gauge.Value == nil {
-                    log.Printf("Отсутствует обязательное поле 'Value' для датчика '%s'\n", gauge.ID)
-                    continue
-                }
-                metricsSlice = append(metricsSlice, Metrics{
-                    ID:    gauge.ID,
-                    MType: "gauge",
-                    Value: gauge.Value,
-                })
-            }
-            for _, counter := range a.Counters {
-                if counter.Delta == nil {
-                    log.Printf("Отсутствует обязательное поле 'Delta' для счетчика '%s'\n", counter.ID)
-                    continue
-                }
-                metricsSlice = append(metricsSlice, Metrics{
-                    ID:    counter.ID,
-                    MType: "counter",
-                    Delta: counter.Delta,
-                })
-            }
-    
-            // Пропускаем отправку, если метрики отсутствуют
-            if len(metricsSlice) == 0 {
-                log.Println("Нет собранных метрик для отправки.")
-                a.mu.Unlock()
-                continue
-            }
-    
-            // Преобразовываем метрики в JSON
-            data, err := json.Marshal(metricsSlice)
-            if err != nil {
-                log.Printf("Ошибка преобразования метрик в JSON: %v\n", err)
-                a.mu.Unlock()
-                continue
-            }
-    
-            // Формируем запрос
-            url := fmt.Sprintf("http://%s/update", a.addr)
-            req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
-            if err != nil {
-                log.Printf("Ошибка создания запроса: %v\n", err)
-                a.mu.Unlock()
-                continue
-            }
-            req.Header.Set("Content-Type", "application/json")
-    
-            // Выполняем HTTP-запрос
-            resp, err := a.client.Do(req)
-            if err != nil {
-                log.Printf("Ошибка отправки метрик: %v\n", err)
-                a.mu.Unlock()
-                continue
-            }
-            defer resp.Body.Close()
-    
-            // Проверяем статус ответа
-            if resp.StatusCode != http.StatusOK {
-                log.Printf("Получен неожиданный статус-код (%d)\n", resp.StatusCode)
-            }
-    
+        data, err := json.Marshal(metricsSlice)
+        if err != nil {
+            log.Printf("Ошибка маршалинга метрик в JSON: %v\n", err)
             a.mu.Unlock()
+            continue
         }
+
+        url := fmt.Sprintf("http://%s/update", a.addr)
+        req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+        if err != nil {
+            log.Printf("Ошибка создания запроса: %v\n", err)
+            a.mu.Unlock()
+            continue
+        }
+        req.Header.Set("Content-Type", "application/json")
+
+        resp, err := a.client.Do(req)
+        if err != nil {
+            log.Printf("Ошибка отправки метрик: %v\n", err)
+            a.mu.Unlock()
+            continue
+        }
+        defer resp.Body.Close()
+
+        if resp.StatusCode != http.StatusOK {
+            log.Printf("Непредвиденный статус-кода (%d)\n", resp.StatusCode)
+        }
+
+        a.mu.Unlock()
     }
+}
