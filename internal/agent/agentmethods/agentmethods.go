@@ -13,18 +13,11 @@ import (
     metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metricsagent"
 )
 
-// Метрика для отправки на сервер
-type Metrics struct {
-    ID    string   `json:"id"`              // имя метрики
-    MType string   `json:"type"`            // тип метрики (gauge или counter)
-    Delta *int64   `json:"delta,omitempty"` // изменение значения (для счётчиков)
-    Value *float64 `json:"value,omitempty"` // текущее значение (для датчиков)
-}
 
 // Агент для сбора и отправки метрик
 type Agent struct {
-    Gauges         []Metrics
-    Counters       []Metrics
+    Gauges         []metrics.Metrics
+    Counters       []metrics.Metrics
     pollCount      int64
     mu             *sync.Mutex
     pollInterval   time.Duration
@@ -36,8 +29,8 @@ type Agent struct {
 // Создание нового агента
 func NewAgent(poll, report time.Duration, addr string) *Agent {
     return &Agent{
-        Gauges:         make([]Metrics, 0),
-        Counters:       make([]Metrics, 0),
+        Gauges:         make([]metrics.Metrics, 0),
+        Counters:       make([]metrics.Metrics, 0),
         pollInterval:   poll,
         reportInterval: report,
         addr:           addr,
@@ -61,18 +54,18 @@ func (a *Agent) CollectMetrics() {
         // Собираем runtime-метрики и добавляем их в Gauges
         runtimeMetrics := metrics.GetRuntimeMetricsGauge(memStats)
         for key, value := range runtimeMetrics {
-            a.Gauges = append(a.Gauges, Metrics{ID: key, MType: "gauge", Value: &value})
+            a.Gauges = append(a.Gauges, metrics.Metrics{ID: key, MType: "gauge", Value: &value})
         }
 
         // Кастомные метрики добавляются в Counters
         customMetrics := metrics.GetCustomMetrics()
         for key, value := range customMetrics {
-            a.Counters = append(a.Counters, Metrics{ID: key, MType: "counter", Delta: &value})
+            a.Counters = append(a.Counters, metrics.Metrics{ID: key, MType: "counter", Delta: &value})
         }
 
         // Счётчик опроса PollCount
         a.pollCount++
-        a.Counters = append(a.Counters, Metrics{ID: "PollCount", MType: "counter", Delta: &a.pollCount})
+        a.Counters = append(a.Counters, metrics.Metrics{ID: "PollCount", MType: "counter", Delta: &a.pollCount})
 
         a.mu.Unlock()
         time.Sleep(a.pollInterval)
@@ -85,13 +78,13 @@ func (a *Agent) SendCollectedMetrics() {
         a.mu.Lock()
 
         // Объединяем метрики
-        var metricsSlice []Metrics
+        var metricsSlice []metrics.Metrics
         for _, gauge := range a.Gauges {
             if gauge.Value == nil {
                 log.Printf("Отсутствует обязательный параметр 'Value' для сенсора '%s'\n", gauge.ID)
                 continue
             }
-            metricsSlice = append(metricsSlice, Metrics{
+            metricsSlice = append(metricsSlice, metrics.Metrics{
                 ID:    gauge.ID,
                 MType: "gauge",
                 Value: gauge.Value,
@@ -102,7 +95,7 @@ func (a *Agent) SendCollectedMetrics() {
                 log.Printf("Отсутствует обязательный параметр 'Delta' для счетчика '%s'\n", counter.ID)
                 continue
             }
-            metricsSlice = append(metricsSlice, Metrics{
+            metricsSlice = append(metricsSlice, metrics.Metrics{
                 ID:    counter.ID,
                 MType: "counter",
                 Delta: counter.Delta,
@@ -125,7 +118,7 @@ func (a *Agent) SendCollectedMetrics() {
         }
 
         // Формируем URL для отправки метрик
-        url := fmt.Sprintf("http://%s/update", a.addr)
+        url := fmt.Sprintf("http://%s/update/", a.addr)
         req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
         if err != nil {
             log.Printf("Ошибка формирования запроса: %v\n", err)
