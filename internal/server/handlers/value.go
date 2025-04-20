@@ -1,66 +1,45 @@
 package handlers
 
 import (
-    "encoding/json"
+    "fmt"
     "net/http"
-//    "github.com/go-chi/chi/v5"
-    "github.com/wolf4b12/metrics-sv.git/internal/constant"     // Импортируем константы
-    "github.com/wolf4b12/metrics-sv.git/internal/server/metrics_srv" // Импортируем структуру метрик
+    "github.com/go-chi/chi/v5"
+    "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
 )
 
-// Интерфейс для получения значений метрик
+// GetStorage интерфейс для получения метрик
 type GetStorage interface {
     GetGauge(name string) (float64, error)
     GetCounter(name string) (int64, error)
 }
 
-// Обработчик для получения метрики по имени и типу
+// ValueHandler обработчик для получения значения метрики
 func ValueHandler(storage GetStorage) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "application/json") // Устанавливаем Content-Type
+        metricType := chi.URLParam(r, "metricType")
+        metricName := chi.URLParam(r, "metricName")
 
-        if r.Method != http.MethodPost {
-            http.Error(w, "Метод не разрешен", http.StatusMethodNotAllowed)
-            return
-        }
+        var value interface{}
+        var err error
 
-        // Читаем тело запроса
-        var requestMetric metrics_srv.Metrics
-        err := json.NewDecoder(r.Body).Decode(&requestMetric)
-        if err != nil || requestMetric.ID == "" || requestMetric.MType == "" {
-            http.Error(w, "Некорректный запрос", http.StatusBadRequest)
-            return
-        }
-
-        // Определяем переменную для хранения результата
-        var responseMetric metrics_srv.Metrics
-        responseMetric.ID = requestMetric.ID
-        responseMetric.MType = requestMetric.MType
-
-        switch requestMetric.MType {
+        switch metricType {
         case constant.MetricTypeGauge:
-            value, errResult := storage.GetGauge(requestMetric.ID)
-            if errResult != nil {
-                http.Error(w, "Ошибка получения метрики", http.StatusNotFound)
-                return
-            }
-            responseMetric.Value = &value // Передаем реальную переменную
-
+            value, err = storage.GetGauge(metricName)
         case constant.MetricTypeCounter:
-            value, errResult := storage.GetCounter(requestMetric.ID)
-            if errResult != nil {
-                http.Error(w, "Ошибка получения метрики", http.StatusNotFound)
-                return
-            }
-            responseMetric.Delta = &value // Передаем реальную переменную
-
+            value, err = storage.GetCounter(metricName)
         default:
-            http.Error(w, "Неизвестный тип метрики", http.StatusBadRequest)
+            w.WriteHeader(http.StatusBadRequest)
+            fmt.Fprintf(w, "Unknown metric type: %s", metricType)
             return
         }
 
-        // Кодируем ответ в JSON и отправляем клиенту
-        jsonResponse, _ := json.Marshal(responseMetric)
-        w.Write(jsonResponse)
+        if err != nil {
+            w.WriteHeader(http.StatusNotFound)
+            fmt.Fprintf(w, "Error getting metric: %s/%s", metricType, metricName)
+            return
+        }
+
+        w.WriteHeader(http.StatusOK)
+        fmt.Fprintln(w, value)
     }
 }
