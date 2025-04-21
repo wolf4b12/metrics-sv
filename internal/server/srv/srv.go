@@ -38,7 +38,7 @@ func NewServer(addr string) *Server {
     // Добавляем middleware для декомпрессии запросов
 
     router.Use(handlers.DecompressMiddleware)
-    router.Use(handlers.CompressionMiddleware)
+ //   router.Use(handlers.CompressionMiddleware)
 
 
    router.Post("/update/{metricType}/{metricName}/{metricValue}", handlers.UpdateHandler(storage))
