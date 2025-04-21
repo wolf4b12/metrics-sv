@@ -66,7 +66,7 @@ func (a *Agent) CollectMetrics() {
 }
 
 // Метод для отправки собранных метрик
-func (a *Agent) SendCollectedMetrics() {
+func (a *Agent) SendJsonCollectedMetrics() {
     for {
         a.mu.Lock()
 
@@ -149,5 +149,54 @@ func (a *Agent) SendCollectedMetrics() {
 
         // Ждем указанный интервал
         time.Sleep(a.reportInterval)
+    }
+}
+
+
+func (a *Agent) SendTextCollectedMetrics(){ // отправляем собранные метрики
+   
+    
+    client := &http.Client{Timeout: 5 * time.Second}
+    baseURL := fmt.Sprintf("http://%s/update", a.addr)
+
+    for {
+        a.mu.Lock()
+
+        
+
+        // Send gauge metrics
+        for _, gauge := range a.Gauges {
+            if gauge.Value == nil {
+                log.Printf("Отсутствует обязательное поле 'Value' для датчика '%s'\n", gauge.ID)
+                continue
+            }
+            url := fmt.Sprintf("%s/gauge/%s/%f", baseURL, gauge.ID, *(gauge.Value)) // Обращаемся к полю Value
+            go SendMetricToServer(client, url)
+        }
+        
+        for _, counter := range a.Counters {
+            if counter.Delta == nil {
+                log.Printf("Отсутствует обязательное поле 'Delta' для счётчика '%s'\n", counter.ID)
+                continue
+            }
+            url := fmt.Sprintf("%s/counter/%s/%d", baseURL, counter.ID, *(counter.Delta)) // Обращаемся к полю Delta
+            go SendMetricToServer(client, url)
+        }
+
+        a.mu.Unlock()
+        time.Sleep(a.reportInterval)
+    }
+}
+
+func SendMetricToServer(client *http.Client, url string) { // вспомогательная функция для отправки метрик
+    resp, err := client.Post(url, "text/plain", nil)
+    if err != nil {
+        log.Printf("Error sending metric: %v\n", err)
+        return
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        log.Printf("Unexpected status code: %d\n", resp.StatusCode)
     }
 }
