@@ -29,7 +29,7 @@ func NewServer(addr string) *Server {
         log.Fatalf("Не удалось инициализировать логгер: %v", err)
     }
 
-    
+
     // Применение middleware для логирования
     router.Use(lgr.LoggingMiddleware(logger)) // Используем middleware из пакета logger
 
@@ -38,6 +38,7 @@ func NewServer(addr string) *Server {
     // Добавляем middleware для декомпрессии запросов
 
     router.Use(handlers.DecompressMiddleware)
+    router.Use(handlers.CompressionMiddleware)
 
 
    router.Post("/update/{metricType}/{metricName}/{metricValue}", handlers.UpdateHandler(storage))
