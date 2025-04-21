@@ -66,7 +66,7 @@ func (a *Agent) CollectMetrics() {
 }
 
 // Метод для отправки собранных метрик
-func (a *Agent) SendJsonCollectedMetrics() {
+func (a *Agent) SendJSONCollectedMetrics() {
     for {
         a.mu.Lock()
 

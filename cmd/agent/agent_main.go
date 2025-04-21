@@ -26,7 +26,7 @@ func main() {
 
 
     go agent2.CollectMetrics()
-    go agent2.SendJsonCollectedMetrics()
+    go agent2.SendJSONCollectedMetrics()
     go agent2.SendTextCollectedMetrics()
     
 
