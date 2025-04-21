@@ -121,7 +121,7 @@ func (a *Agent) SendCollectedMetrics() {
                 continue
             }
 
-            // Формируем URL для отправки метрики
+            // Формируем URL для отправки метрики 
             url := fmt.Sprintf("http://%s/update/", a.addr)
             req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
             if err != nil {
