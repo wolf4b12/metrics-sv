@@ -1,9 +1,7 @@
 package srv
 
 import (
-    "compress/gzip"
     "fmt"
-    "io"
     "log"
     "net/http"
 
@@ -13,49 +11,11 @@ import (
     "github.com/wolf4b12/metrics-sv.git/internal/server/storage"
     lgr "github.com/wolf4b12/metrics-sv.git/internal/server/logger" // Импортируем пакет логирования
     "go.uber.org/zap"
+    cm  "github.com/wolf4b12/metrics-sv.git/internal/server/compress"
+
 )
 
-// Middleware для обработки сжатия входящих запросов
-func gzipRequest(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if r.Header.Get("Content-Encoding") == "gzip" {
-            reader, err := gzip.NewReader(r.Body)
-            if err != nil {
-                http.Error(w, "Failed to decode gzip content", http.StatusBadRequest)
-                return
-            }
-            defer reader.Close()
-            r.Body = io.NopCloser(reader)
-        }
-        next.ServeHTTP(w, r)
-    })
-}
 
-// Middleware для отправки сжатых ответов клиентам
-func gzipResponse(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        if r.Header.Get("Accept-Encoding") == "gzip" {
-            w.Header().Set("Content-Encoding", "gzip")
-            gz := gzip.NewWriter(w)
-            defer gz.Close()
-            gzw := gzipResponseWriter{w, gz}
-            next.ServeHTTP(gzw, r)
-        } else {
-            next.ServeHTTP(w, r)
-        }
-    })
-}
-
-// Структура-обертка для ResponseWriter с поддержкой gzip
-type gzipResponseWriter struct {
-    http.ResponseWriter
-    gz *gzip.Writer
-}
-
-// Write реализует интерфейс ResponseWriter для gzip
-func (gw gzipResponseWriter) Write(b []byte) (int, error) {
-    return gw.gz.Write(b)
-}
 
 type Server struct {
     router *chi.Mux
@@ -78,10 +38,10 @@ func NewServer(addr string) *Server {
     router.Use(middleware.Logger)
 
     // Поддерживаем прием сжатых запросов
-    router.Use(gzipRequest)
+    router.Use(cm.GzipRequest)
 
     // Включаем поддержку выдачи сжатых ответов
-    router.Use(gzipResponse)
+    router.Use(cm.GzipResponse)
 
     // Маршруты остаются такими же
     router.Post("/update/{metricType}/{metricName}/{metricValue}", handlers.UpdateHandler(storage))
