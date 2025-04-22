@@ -48,7 +48,7 @@ func ValueHandler(storage GetStorage) http.HandlerFunc {
 }
 
 // New JSON-based ValueHandler
-func PostValueHandler(storage GetStorage) http.HandlerFunc {
+func PostJSONValueHandler(storage GetStorage) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         // Установим заголовок ответа Content-Type
         w.Header().Set("Content-Type", "application/json")
