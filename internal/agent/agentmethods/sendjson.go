@@ -66,7 +66,7 @@ func (a *Agent) SendJSONCollectedMetrics() {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
                 continue
             }
-            defer resp.Body.Close()
+            resp.Body.Close()
 
             // Проверяем статус ответа
             if resp.StatusCode != http.StatusOK {
@@ -80,7 +80,7 @@ func (a *Agent) SendJSONCollectedMetrics() {
                     log.Printf("Ошибка разбора Gzip-ответа: %v\n", err)
                     continue
                 }
-                defer reader.Close()
+                reader.Close()
 
                 // Читаем ответ
                 bodyBytes, err := io.ReadAll(reader)
@@ -149,7 +149,7 @@ func (a *Agent) SendJSONCollectedMetrics() {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
                 continue
             }
-            defer resp.Body.Close()
+            resp.Body.Close()
 
             // Проверяем статус ответа
             if resp.StatusCode != http.StatusOK {
@@ -163,7 +163,7 @@ func (a *Agent) SendJSONCollectedMetrics() {
                     log.Printf("Ошибка разбора Gzip-ответа: %v\n", err)
                     continue
                 }
-                defer reader.Close()
+                reader.Close()
 
                 // Читаем ответ
                 bodyBytes, err := io.ReadAll(reader)
