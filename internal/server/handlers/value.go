@@ -69,11 +69,7 @@ func PostJSONValueHandler(storage GetStorage) http.HandlerFunc {
             return
         }
 
-        // Проверим, были ли переданы оба необходимых параметра
-    //    if inputMetric.ID == "" || inputMetric.MType == "" {
-     //        http.Error(w, "Параметры id и type обязательны", http.StatusBadRequest)
-     //       return
-     //   }
+
 
         // Запрашиваем нужную метрику исходя из типа
         var outputMetric metricssrv.Metrics

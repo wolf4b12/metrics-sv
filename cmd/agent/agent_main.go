@@ -14,14 +14,6 @@ func main() {
 
     poll, report, addr := parseflags.ParseFlags()
     
-//   agent := agentmethods.NewAgent(poll, report, addr, false) // Используем функцию NewAgent из пакета agentmethods
-
-
-//    go agent.CollectMetrics()
-
-//    go agent.SendCollectedMetrics()
-
-
     agent2 := agentmethods.NewAgent(poll, report, addr)
 
 
