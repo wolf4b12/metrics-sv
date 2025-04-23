@@ -1,19 +1,22 @@
 package storage
 
 import (
+    "encoding/json"
     "fmt"
+    "os"
     "sync"
+
     "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
 )
 
-// MemStorage реализация хранилища в памяти
+// MemStorage реализует хранение метрик в памяти
 type MemStorage struct {
     mu       sync.RWMutex
     gauges   map[string]float64
     counters map[string]int64
 }
 
-// NewMemStorage конструктор хранилища
+// NewMemStorage создает новое хранилище метрик
 func NewMemStorage() *MemStorage {
     return &MemStorage{
         gauges:   make(map[string]float64),
@@ -21,14 +24,14 @@ func NewMemStorage() *MemStorage {
     }
 }
 
-// UpdateGauge обновление gauge-метрики
-
+// UpdateGauge обновляет значение gauge-метрики
 func (s *MemStorage) UpdateGauge(name string, value float64) {
     s.mu.Lock()
     defer s.mu.Unlock()
     s.gauges[name] = value
 }
 
+// UpdateCounter увеличивает значение counter-метрики
 // UpdateCounter обновление counter-метрики
 func (s *MemStorage) UpdateCounter(name string, value int64) {
     s.mu.Lock()
@@ -36,10 +39,10 @@ func (s *MemStorage) UpdateCounter(name string, value int64) {
     s.counters[name] += value
 }
 
-// GetGauge получение gauge-метрики
+// GetGauge получает текущее значение gauge-метрики
 func (s *MemStorage) GetGauge(name string) (float64, error) {
     s.mu.RLock()
- defer s.mu.RUnlock()
+    defer s.mu.RUnlock()
     value, ok := s.gauges[name]
     if !ok {
         return 0, fmt.Errorf("metric not found")
@@ -47,7 +50,7 @@ func (s *MemStorage) GetGauge(name string) (float64, error) {
     return value, nil
 }
 
-// GetCounter получение counter-метрики
+// GetCounter получает текущее значение counter-метрики
 func (s *MemStorage) GetCounter(name string) (int64, error) {
     s.mu.RLock()
     defer s.mu.RUnlock()
@@ -58,7 +61,7 @@ func (s *MemStorage) GetCounter(name string) (int64, error) {
     return value, nil
 }
 
-// AllMetrics получение всех метрик
+// AllMetrics возвращает список всех существующих метрик
 func (s *MemStorage) AllMetrics() map[string]map[string]interface{} {
     s.mu.RLock()
     defer s.mu.RUnlock()
@@ -73,4 +76,51 @@ func (s *MemStorage) AllMetrics() map[string]map[string]interface{} {
         result[constant.MetricTypeCounter][k] = v
     }
     return result
+}
+
+// LoadFromFile восстанавливает метрики из файла
+func (s *MemStorage) LoadFromFile(filePath string) error {
+    rawData, err := os.ReadFile(filePath)
+    if err != nil {
+        return err
+    }
+
+    var loadedData map[string]map[string]interface{}
+    if err := json.Unmarshal(rawData, &loadedData); err != nil {
+        return err
+    }
+
+    s.mu.Lock()
+    defer s.mu.Unlock()
+
+    for typ, metrics := range loadedData {
+        switch typ {
+        case constant.MetricTypeGauge:
+            for key, val := range metrics {
+                fVal, _ := val.(float64)
+                s.gauges[key] = fVal
+            }
+        case constant.MetricTypeCounter:
+            for key, val := range metrics {
+                iVal, _ := val.(int64)
+                s.counters[key] = iVal
+            }
+        default:
+            continue
+        }
+    }
+
+    return nil
+}
+
+// SaveToFile сохраняет текущее состояние метрик в файл
+func (s *MemStorage) SaveToFile(filePath string) error {
+    allMetrics := s.AllMetrics()
+
+    rawData, err := json.Marshal(allMetrics)
+    if err != nil {
+        return err
+    }
+
+    return os.WriteFile(filePath, rawData, 0644)
 }
