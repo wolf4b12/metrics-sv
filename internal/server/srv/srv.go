@@ -1,10 +1,10 @@
 package srv
 
 import (
+    "context"
     "fmt"
     "log"
     "net/http"
-//    "os"
     "time"
 
     "github.com/go-chi/chi/v5"
@@ -24,10 +24,11 @@ type Server struct {
 // Константа пути к файлу с метриками
 const filePath = "./metrics.json"
 
+// Конструктор сервера
 func NewServer(addr string, loadOnStart bool, saveInterval time.Duration) *Server {
     storage := storage.NewMemStorage()
 
-    // Подгрузим старые метрики при старте, если это разрешено
+    // Загрузка метрик при старте
     if loadOnStart {
         err := storage.LoadFromFile(filePath)
         if err != nil {
@@ -39,30 +40,26 @@ func NewServer(addr string, loadOnStart bool, saveInterval time.Duration) *Serve
 
     router := chi.NewRouter()
 
-    // Инициализируем логгер Zap
+    // Логгер
     logger, err := zap.NewProduction()
     if err != nil {
         log.Fatalf("Не удалось инициализировать логгер: %v", err)
     }
 
-    // Применяем middleware для логирования
-    router.Use(lgr.LoggingMiddleware(logger)) // Используем middleware из пакета logger
+    // Применение middleware
+    router.Use(lgr.LoggingMiddleware(logger))
     router.Use(middleware.Logger)
-
-    // Поддерживаем прием сжатых запросов
     router.Use(cm.GzipRequest)
-
-    // Включаем поддержку выдачи сжатых ответов
     router.Use(cm.GzipResponse)
 
-    // Маршруты остаются теми же
+    // Маршруты
     router.Post("/update/{metricType}/{metricName}/{metricValue}", handlers.UpdateHandler(storage))
     router.Post("/update/", handlers.UpdateJSONHandler(storage))
     router.Get("/value/{metricType}/{metricName}", handlers.ValueHandler(storage))
     router.Post("/value/", handlers.PostJSONValueHandler(storage))
     router.Get("/", handlers.ListMetricsHandler(storage))
 
-    // Начнем периодический процесс сохранения метрик
+    // Автосохранение метрик
     ticker := time.NewTicker(saveInterval)
     go func() {
         for range ticker.C {
@@ -84,8 +81,20 @@ func NewServer(addr string, loadOnStart bool, saveInterval time.Duration) *Serve
     }
 }
 
+// Метод для плавного завершения работы сервера
+func (s *Server) GracefulShutdown(ctx context.Context) error {
+    log.Println("Начинаем плавное завершение работы сервера...")
+    err := s.server.Shutdown(ctx)
+    if err != nil {
+        return fmt.Errorf("ошибка при завершении работы сервера: %w", err)
+    }
+    log.Println("Сервер завершил работу.")
+    return nil
+}
+
+// Основной метод запуска сервера
 func (s *Server) Run() error {
-    log.Printf("Запуск сервера на http://%s\n", s.server.Addr)
+    log.Printf("Запуск сервера на адресе: %s\n", s.server.Addr)
     if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
         return fmt.Errorf("не удалось запустить сервер: %w", err)
     }
