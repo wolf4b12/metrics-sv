@@ -89,9 +89,9 @@ func checkSource(flagSet *flag.FlagSet, flagName, envKey string, value interface
 
 // Аналогичная проверка для булевых параметров
 func checkSourceBool(flagSet *flag.FlagSet, flagName, envKey string, value bool) {
-    strValue := "false"
+    strValue := "true"
     if value {
-        strValue = "true"
+        strValue = "false"
     }
 
     if flagSet.Lookup(flagName) != nil && flagSet.Lookup(flagName).Value.String() != "" {
