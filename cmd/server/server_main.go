@@ -16,7 +16,7 @@ func main() {
 
     // Настройки загрузки и интервала сохранения
     loadPrevious := true           // Нужно ли подгружать старые метрики при старте
-    interval := 5 * time.Minute    // Интервал сохранения метрик (каждый 5 минут)
+    interval := 5 * time.Minute    //  Интервал сохранения метрик (каждый 5 минут)
 
     srv := server.NewServer(cfg.GetAddr(), loadPrevious, interval)
 
