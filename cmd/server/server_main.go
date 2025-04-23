@@ -2,10 +2,9 @@ package main
 
 import (
     "log"
-    "time"
 
-    server   "github.com/wolf4b12/metrics-sv.git/internal/server/srv"
-    config   "github.com/wolf4b12/metrics-sv.git/internal/server/config"
+    srv "github.com/wolf4b12/metrics-sv.git/internal/server/srv"
+    config "github.com/wolf4b12/metrics-sv.git/internal/server/config"
 )
 
 func main() {
@@ -14,14 +13,18 @@ func main() {
         log.Fatalf("ошибка при создании конфигурации: %v", err)
     }
 
-    // Настройки загрузки и интервала сохранения
-    loadPrevious := true           // Нужно ли подгружать старые метрики при старте
-    interval := 5 * time.Minute    // Интервал сохранения метрик (каждый 5 минут)
-
-    srv := server.NewServer(cfg.GetAddr(), loadPrevious, interval)
-
-    err = srv.Run()
+    // Обращаемся непосредственно к полю конфигурации
+    server  := srv.NewServer(
+        cfg.GetAddr(),                   // Адрес прослушивания
+        cfg.IsRestoreEnabled(),          // Нужна ли загрузка предыдущих метрик
+        cfg.GetStoreInterval(),          // Интервал сохранения метрик
+    )
     if err != nil {
-        log.Fatalf("Failed to run server: %v", err)
+        log.Fatalf("ошибка при создании сервера: %v", err)
+    }
+
+    err = server.Run()
+    if err != nil {
+        log.Fatalf("ошибка при запуске сервера: %v", err)
     }
 }

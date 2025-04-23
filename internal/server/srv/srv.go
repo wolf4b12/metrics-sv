@@ -22,7 +22,7 @@ type Server struct {
 }
 
 // Константа пути к файлу с метриками
-const filePath = "./metrics.json"
+const filePath = "/tmp/metrics.json"
 
 func NewServer(addr string, loadOnStart bool, saveInterval time.Duration) *Server {
     storage := storage.NewMemStorage()

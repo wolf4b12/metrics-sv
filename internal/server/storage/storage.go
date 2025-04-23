@@ -87,7 +87,7 @@ func (s *MemStorage) LoadFromFile(filePath string) error {
 
     var loadedData map[string]map[string]interface{}
     if err := json.Unmarshal(rawData, &loadedData); err != nil {
-        return err
+        return fmt.Errorf("ошибка разбора JSON: %v", err)
     }
 
     s.mu.Lock()
@@ -97,12 +97,24 @@ func (s *MemStorage) LoadFromFile(filePath string) error {
         switch typ {
         case constant.MetricTypeGauge:
             for key, val := range metrics {
-                fVal, _ := val.(float64)
+                fVal, ok := val.(float64)
+                if !ok {
+                    return fmt.Errorf("некорректный тип данных для Gauges: %v", val)
+                }
                 s.gauges[key] = fVal
             }
         case constant.MetricTypeCounter:
             for key, val := range metrics {
-                iVal, _ := val.(int64)
+                var iVal int64
+                switch v := val.(type) {
+                case float64:
+                    // Преобразуем float64 в int64 с округлением вниз
+                    iVal = int64(v)
+                case int64:
+                    iVal = v
+                default:
+                    return fmt.Errorf("некорректный тип данных для Counter: %T", val)
+                }
                 s.counters[key] = iVal
             }
         default:
@@ -113,11 +125,12 @@ func (s *MemStorage) LoadFromFile(filePath string) error {
     return nil
 }
 
+
 // SaveToFile сохраняет текущее состояние метрик в файл
 func (s *MemStorage) SaveToFile(filePath string) error {
     allMetrics := s.AllMetrics()
 
-    rawData, err := json.Marshal(allMetrics)
+    rawData, err := json.MarshalIndent(allMetrics, "", "\t") // marshal with indentation for readability
     if err != nil {
         return err
     }
