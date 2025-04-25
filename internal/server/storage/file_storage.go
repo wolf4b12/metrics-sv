@@ -1,4 +1,3 @@
-// file_storage.go
 package storage
 
 import (
@@ -7,21 +6,33 @@ import (
     "fmt"
     "os"
     "sync"
+
+//    "github.com/wolf4b12/metrics-sv.git/internal/constant"
 )
 
-// FileStorage хранит метрики в файле
+// Тип хранения метрик в файле
 type FileStorage struct {
     filePath string
-    data     map[string]map[string]interface{}
-    mu       sync.Mutex
+    data     struct {
+        Gauges   map[string]float64 `json:"gauges,omitempty"`
+        Counters map[string]int64   `json:"counters,omitempty"`
+    }
+    mu sync.Mutex
 }
 
-// NewFileStorage создаёт новое хранилище метрик в файле
+// Создание нового экземпляра хранилища метрик
 func NewFileStorage(filePath string) (*FileStorage, error) {
     fs := &FileStorage{
         filePath: filePath,
-        data:     make(map[string]map[string]interface{}),
+        data: struct {
+            Gauges   map[string]float64 `json:"gauges,omitempty"`
+            Counters map[string]int64   `json:"counters,omitempty"`
+        }{
+            make(map[string]float64),
+            make(map[string]int64),
+        },
     }
+
     err := fs.LoadFromFile(fs.filePath)
     if err != nil && !os.IsNotExist(err) {
         return nil, fmt.Errorf("ошибка загрузки данных из файла: %w", err)
@@ -33,52 +44,56 @@ func NewFileStorage(filePath string) (*FileStorage, error) {
 func (fs *FileStorage) UpdateGauge(name string, value float64) {
     fs.mu.Lock()
     defer fs.mu.Unlock()
-    if _, exists := fs.data["gauges"]; !exists {
-        fs.data["gauges"] = make(map[string]interface{})
-    }
-    fs.data["gauges"][name] = value
+    fs.data.Gauges[name] = value
 }
 
 // UpdateCounter увеличивает значение counter-метрики
 func (fs *FileStorage) UpdateCounter(name string, value int64) {
     fs.mu.Lock()
     defer fs.mu.Unlock()
-    if _, exists := fs.data["counters"]; !exists {
-        fs.data["counters"] = make(map[string]interface{})
+    currentValue, exists := fs.data.Counters[name]
+    if !exists {
+        currentValue = 0
     }
-    currentValue, _ := fs.data["counters"][name].(int64)
-    fs.data["counters"][name] = currentValue + value
+    fs.data.Counters[name] = currentValue + value
 }
 
 // GetGauge получает текущее значение gauge-метрики
 func (fs *FileStorage) GetGauge(name string) (float64, error) {
     fs.mu.Lock()
     defer fs.mu.Unlock()
-    if gauges, exists := fs.data["gauges"]; exists {
-        if value, ok := gauges[name]; ok {
-            return value.(float64), nil
-        }
+    value, exists := fs.data.Gauges[name]
+    if !exists {
+        return 0, errors.New("metric not found")
     }
-    return 0, errors.New("metric not found")
+    return value, nil
 }
 
 // GetCounter получает текущее значение counter-метрики
 func (fs *FileStorage) GetCounter(name string) (int64, error) {
     fs.mu.Lock()
     defer fs.mu.Unlock()
-    if counters, exists := fs.data["counters"]; exists {
-        if value, ok := counters[name]; ok {
-            return value.(int64), nil
-        }
+    value, exists := fs.data.Counters[name]
+    if !exists {
+        return 0, errors.New("metric not found")
     }
-    return 0, errors.New("metric not found")
+    return value, nil
 }
 
 // AllMetrics возвращает список всех существующих метрик
 func (fs *FileStorage) AllMetrics() map[string]map[string]interface{} {
     fs.mu.Lock()
     defer fs.mu.Unlock()
-    return fs.data
+    result := make(map[string]map[string]interface{})
+    result["gauges"] = make(map[string]interface{})
+    for k, v := range fs.data.Gauges {
+        result["gauges"][k] = v
+    }
+    result["counters"] = make(map[string]interface{})
+    for k, v := range fs.data.Counters {
+        result["counters"][k] = v
+    }
+    return result
 }
 
 // LoadFromFile загружает метрики из файла
@@ -88,10 +103,21 @@ func (fs *FileStorage) LoadFromFile(filePath string) error {
         return err
     }
 
-    err = json.Unmarshal(rawData, &fs.data)
-    if err != nil {
+    var loadedData struct {
+        Gauges   map[string]float64 `json:"gauges,omitempty"`
+        Counters map[string]int64   `json:"counters,omitempty"`
+    }
+
+    if err := json.Unmarshal(rawData, &loadedData); err != nil {
         return fmt.Errorf("ошибка разбора JSON: %v", err)
     }
+
+    fs.mu.Lock()
+    defer fs.mu.Unlock()
+
+    fs.data.Gauges = loadedData.Gauges
+    fs.data.Counters = loadedData.Counters
+
     return nil
 }
 
