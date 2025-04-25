@@ -14,6 +14,7 @@ import (
     lgr "github.com/wolf4b12/metrics-sv.git/internal/server/logger" // Импортируем пакет логирования
     "go.uber.org/zap"
     cm  "github.com/wolf4b12/metrics-sv.git/internal/server/compress"
+
 )
 
 type Server struct {
@@ -21,13 +22,26 @@ type Server struct {
     server   *http.Server
 }
 
-// Константа пути к файлу с метриками
-const filePath = "/tmp/metrics.json"
 
-func NewServer(addr string, loadOnStart bool, saveInterval time.Duration) *Server {
-    storage := storage.NewMemStorage()
 
-    // Подгрузим старые метрики при старте, если это разрешено
+
+// Создадим функцию, которая выбирает тип хранилища в зависимости от настроек
+func chooseStorage(loadOnStart bool, filePath string) storage.Storage {
+    if loadOnStart {
+        fs, err := storage.NewFileStorage(filePath)
+        if err != nil {
+            log.Fatalf("Ошибка при создании FileStorage: %v", err)
+        }
+        return fs
+    }
+    return storage.NewMemStorage()
+}
+
+func NewServer(addr string, loadOnStart bool, saveInterval time.Duration, filePath string) *Server {
+    // Выберите подходящее хранилище исходя из настроек
+    storage := chooseStorage(loadOnStart, filePath)
+
+    // Если выбрано FileStorage, восстановим старые метрики
     if loadOnStart {
         err := storage.LoadFromFile(filePath)
         if err != nil {
@@ -36,6 +50,15 @@ func NewServer(addr string, loadOnStart bool, saveInterval time.Duration) *Serve
             log.Println("Предыдущие метрики успешно загружены.")
         }
     }
+
+
+
+
+
+
+
+
+
 
     router := chi.NewRouter()
 

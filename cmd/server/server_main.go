@@ -18,6 +18,7 @@ func main() {
         cfg.GetAddr(),                   // Адрес прослушивания
         cfg.IsRestoreEnabled(),          // Нужна ли загрузка предыдущих метрик
         cfg.GetStoreInterval(),          // Интервал сохранения метрик
+        cfg.GetFileStoragePath(),        // путь до файла с метриками
     )
     if err != nil {
         log.Fatalf("ошибка при создании сервера: %v", err)
