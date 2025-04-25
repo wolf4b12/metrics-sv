@@ -3,15 +3,13 @@ package agentmethods
 import (
     "fmt"
     "log"
-    "net/http"
     "time"
-    "io"
-    "bytes"
-    "compress/gzip"
+
 
 )
 
 
+// SendTextCollectedMetrics отправляет собранные метрики в текстовом формате
 func (a *Agent) SendTextCollectedMetrics() {
     for {
         a.mu.Lock()
@@ -29,69 +27,9 @@ func (a *Agent) SendTextCollectedMetrics() {
             // Формируем URL для конкретной метрики
             textURL := fmt.Sprintf("%s/gauge/%s/%f", baseURL, gauge.ID, *(gauge.Value))
 
-            // Сжимаем URL в Gzip
-            var buffer bytes.Buffer
-            writer := gzip.NewWriter(&buffer)
-            if _, err := writer.Write([]byte(textURL)); err != nil {
-                log.Printf("Ошибка сжатия URL: %v\n", err)
-                continue
-            }
-            if err := writer.Close(); err != nil {
-                log.Printf("Ошибка закрытия Gzip-компрессора: %v\n", err)
-                continue
-            }
-
-            // Формируем POST-запрос с Gzip-данными
-            req, err := http.NewRequest(http.MethodPost, baseURL+"/gauge", &buffer)
-            if err != nil {
-                log.Printf("Ошибка формирования запроса: %v\n", err)
-                continue
-            }
-
-            // Добавляем заголовки для сжатия
-            req.Header.Set("Content-Type", "text/plain")
-            req.Header.Set("Content-Encoding", "gzip")
-            req.Header.Set("Accept-Encoding", "gzip")
-
-            // Выполняем запрос
-            resp, err := a.client.Do(req)
-            if err != nil {
+            // Отправляем метрику
+            if err := a.sendMetric(baseURL+"/gauge", []byte(textURL), "text/plain"); err != nil {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
-                continue
-            }
-            resp.Body.Close()
-
-            // Проверяем статус ответа
-            if resp.StatusCode != http.StatusOK {
-                log.Printf("Получен неправильный статус-код (%d)\n", resp.StatusCode)
-            }
-
-            // Если ответ приходит в сжатом виде, разархивируем его
-            if resp.Header.Get("Content-Encoding") == "gzip" {
-                reader, err := gzip.NewReader(resp.Body)
-                if err != nil {
-                    log.Printf("Ошибка разбора Gzip-ответа: %v\n", err)
-                    continue
-                }
-                reader.Close()
-
-                // Читаем ответ
-                bodyBytes, err := io.ReadAll(reader)
-                if err != nil {
-                    log.Printf("Ошибка чтения тела ответа: %v\n", err)
-                    continue
-                }
-
-                fmt.Println(string(bodyBytes))
-            } else {
-                // Ответ несжатый, читаем обычный
-                bodyBytes, err := io.ReadAll(resp.Body)
-                if err != nil {
-                    log.Printf("Ошибка чтения тела ответа: %v\n", err)
-                    continue
-                }
-
-                fmt.Println(string(bodyBytes))
             }
         }
 
@@ -105,69 +43,9 @@ func (a *Agent) SendTextCollectedMetrics() {
             // Формируем URL для конкретной метрики
             textURL := fmt.Sprintf("%s/counter/%s/%d", baseURL, counter.ID, *(counter.Delta))
 
-            // Сжимаем URL в Gzip
-            var buffer bytes.Buffer
-            writer := gzip.NewWriter(&buffer)
-            if _, err := writer.Write([]byte(textURL)); err != nil {
-                log.Printf("Ошибка сжатия URL: %v\n", err)
-                continue
-            }
-            if err := writer.Close(); err != nil {
-                log.Printf("Ошибка закрытия Gzip-компрессора: %v\n", err)
-                continue
-            }
-
-            // Формируем POST-запрос с Gzip-данными
-            req, err := http.NewRequest(http.MethodPost, baseURL+"/counter", &buffer)
-            if err != nil {
-                log.Printf("Ошибка формирования запроса: %v\n", err)
-                continue
-            }
-
-            // Добавляем заголовки для сжатия
-            req.Header.Set("Content-Type", "text/plain")
-            req.Header.Set("Content-Encoding", "gzip")
-            req.Header.Set("Accept-Encoding", "gzip")
-
-            // Выполняем запрос
-            resp, err := a.client.Do(req)
-            if err != nil {
+            // Отправляем метрику
+            if err := a.sendMetric(baseURL+"/counter", []byte(textURL), "text/plain"); err != nil {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
-                continue
-            }
-            resp.Body.Close()
-
-            // Проверяем статус ответа
-            if resp.StatusCode != http.StatusOK {
-                log.Printf("Получен неправильный статус-код (%d)\n", resp.StatusCode)
-            }
-
-            // Если ответ приходит в сжатом виде, разархивируем его
-            if resp.Header.Get("Content-Encoding") == "gzip" {
-                reader, err := gzip.NewReader(resp.Body)
-                if err != nil {
-                    log.Printf("Ошибка разбора Gzip-ответа: %v\n", err)
-                    continue
-                }
-                reader.Close()
-
-                // Читаем ответ
-                bodyBytes, err := io.ReadAll(reader)
-                if err != nil {
-                    log.Printf("Ошибка чтения тела ответа: %v\n", err)
-                    continue
-                }
-
-                fmt.Println(string(bodyBytes))
-            } else {
-                // Ответ несжатый, читаем обычный
-                bodyBytes, err := io.ReadAll(resp.Body)
-                if err != nil {
-                    log.Printf("Ошибка чтения тела ответа: %v\n", err)
-                    continue
-                }
-
-                fmt.Println(string(bodyBytes))
             }
         }
 
