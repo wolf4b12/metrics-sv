@@ -42,17 +42,28 @@ func NewAgent(poll, report time.Duration, addr string) *Agent {
     }
 }
 
-// helperDoRequest отправляет запрос и обрабатывает ответ
-func (a *Agent) helperDoRequest(method, url string, body io.Reader, headers map[string]string) error {
-    req, err := http.NewRequest(method, url, body)
+// Helper function для отправки сжатых данных
+func (a *Agent) sendCompressedRequest(url string, payload []byte, contentType string) error {
+    // Сжимаем данные с помощью Gzip
+    var buf bytes.Buffer
+    zw := gzip.NewWriter(&buf)
+    if _, err := zw.Write(payload); err != nil {
+        return fmt.Errorf("ошибка сжатия метрики: %v", err)
+    }
+    if err := zw.Close(); err != nil {
+        return fmt.Errorf("ошибка закрытия компрессора: %v", err)
+    }
+
+    // Формируем запрос с Gzip-данными
+    req, err := http.NewRequest(http.MethodPost, url, &buf)
     if err != nil {
         return fmt.Errorf("ошибка формирования запроса: %v", err)
     }
 
-    // Устанавливаем заголовки
-    for k, v := range headers {
-        req.Header.Set(k, v)
-    }
+    // Устанавливаем заголовки для сжатия
+    req.Header.Set("Content-Type", contentType)
+    req.Header.Set("Content-Encoding", "gzip")
+    req.Header.Set("Accept-Encoding", "gzip")
 
     // Выполняем запрос
     resp, err := a.client.Do(req)
@@ -116,20 +127,8 @@ func (a *Agent) SendJSONCollectedMetrics() {
             // Формируем URL для отправки метрики
             url := fmt.Sprintf("http://%s/update", a.addr)
 
-            // Сжимаем данные с помощью Gzip
-            var buf bytes.Buffer
-            zw := gzip.NewWriter(&buf)
-            if _, err := zw.Write(data); err != nil {
-                log.Printf("Ошибка сжатия метрики: %v\n", err)
-                continue
-            }
-            if err := zw.Close(); err != nil {
-                log.Printf("Ошибка закрытия компрессора: %v\n", err)
-                continue
-            }
-
             // Отправляем метрику
-            if err := a.helperDoRequest(http.MethodPost, url, &buf, map[string]string{"Content-Type": "application/json", "Content-Encoding": "gzip"}); err != nil {
+            if err := a.sendCompressedRequest(url, data, "application/json"); err != nil {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
             }
         }
@@ -151,20 +150,8 @@ func (a *Agent) SendJSONCollectedMetrics() {
             // Формируем URL для отправки метрики
             url := fmt.Sprintf("http://%s/update", a.addr)
 
-            // Сжимаем данные с помощью Gzip
-            var buf bytes.Buffer
-            zw := gzip.NewWriter(&buf)
-            if _, err := zw.Write(data); err != nil {
-                log.Printf("Ошибка сжатия метрики: %v\n", err)
-                continue
-            }
-            if err := zw.Close(); err != nil {
-                log.Printf("Ошибка закрытия компрессора: %v\n", err)
-                continue
-            }
-
             // Отправляем метрику
-            if err := a.helperDoRequest(http.MethodPost, url, &buf, map[string]string{"Content-Type": "application/json", "Content-Encoding": "gzip"}); err != nil {
+            if err := a.sendCompressedRequest(url, data, "application/json"); err != nil {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
             }
         }
@@ -194,20 +181,8 @@ func (a *Agent) SendTextCollectedMetrics() {
             // Формируем URL для конкретной метрики
             textURL := fmt.Sprintf("%s/gauge/%s/%f", baseURL, gauge.ID, *(gauge.Value))
 
-            // Сжимаем URL в Gzip
-            var buffer bytes.Buffer
-            writer := gzip.NewWriter(&buffer)
-            if _, err := writer.Write([]byte(textURL)); err != nil {
-                log.Printf("Ошибка сжатия URL: %v\n", err)
-                continue
-            }
-            if err := writer.Close(); err != nil {
-                log.Printf("Ошибка закрытия Gzip-компрессора: %v\n", err)
-                continue
-            }
-
             // Отправляем метрику
-            if err := a.helperDoRequest(http.MethodPost, baseURL+"/gauge", &buffer, map[string]string{"Content-Type": "text/plain", "Content-Encoding": "gzip"}); err != nil {
+            if err := a.sendCompressedRequest(baseURL+"/gauge", []byte(textURL), "text/plain"); err != nil {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
             }
         }
@@ -222,20 +197,8 @@ func (a *Agent) SendTextCollectedMetrics() {
             // Формируем URL для конкретной метрики
             textURL := fmt.Sprintf("%s/counter/%s/%d", baseURL, counter.ID, *(counter.Delta))
 
-            // Сжимаем URL в Gzip
-            var buffer bytes.Buffer
-            writer := gzip.NewWriter(&buffer)
-            if _, err := writer.Write([]byte(textURL)); err != nil {
-                log.Printf("Ошибка сжатия URL: %v\n", err)
-                continue
-            }
-            if err := writer.Close(); err != nil {
-                log.Printf("Ошибка закрытия Gzip-компрессора: %v\n", err)
-                continue
-            }
-
             // Отправляем метрику
-            if err := a.helperDoRequest(http.MethodPost, baseURL+"/counter", &buffer, map[string]string{"Content-Type": "text/plain", "Content-Encoding": "gzip"}); err != nil {
+            if err := a.sendCompressedRequest(baseURL+"/counter", []byte(textURL), "text/plain"); err != nil {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
             }
         }
