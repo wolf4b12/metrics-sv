@@ -24,7 +24,7 @@ func (a *Agent) collectMetricsOnce() {
     a.mu.Lock()
     defer a.mu.Unlock()
 
-    // Чистим старые коллекции перед новым опросом
+    // Чистим старые коллекции перед новым опросом 
     a.Gauges = a.Gauges[:0]
     a.Counters = a.Counters[:0]
 
