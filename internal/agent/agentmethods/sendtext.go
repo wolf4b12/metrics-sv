@@ -4,11 +4,14 @@ import (
     "fmt"
     "log"
     "time"
+    "net/http"
+    "strings"
 
 
 )
 
 
+// SendTextCollectedMetrics отправляет собранные метрики в текстовом формате
 // SendTextCollectedMetrics отправляет собранные метрики в текстовом формате
 func (a *Agent) SendTextCollectedMetrics() {
     for {
@@ -28,7 +31,7 @@ func (a *Agent) SendTextCollectedMetrics() {
             textURL := fmt.Sprintf("%s/gauge/%s/%f", baseURL, gauge.ID, *(gauge.Value))
 
             // Отправляем метрику
-            if err := a.sendMetric(baseURL+"/gauge", []byte(textURL), "text/plain"); err != nil {
+            if err := a.doRequest(http.MethodPost, baseURL+"/gauge", strings.NewReader(textURL), map[string]string{"Content-Type": "text/plain", "Content-Encoding": "gzip"}); err != nil {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
             }
         }
@@ -44,7 +47,7 @@ func (a *Agent) SendTextCollectedMetrics() {
             textURL := fmt.Sprintf("%s/counter/%s/%d", baseURL, counter.ID, *(counter.Delta))
 
             // Отправляем метрику
-            if err := a.sendMetric(baseURL+"/counter", []byte(textURL), "text/plain"); err != nil {
+            if err := a.doRequest(http.MethodPost, baseURL+"/counter", strings.NewReader(textURL), map[string]string{"Content-Type": "text/plain", "Content-Encoding": "gzip"}); err != nil {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
             }
         }

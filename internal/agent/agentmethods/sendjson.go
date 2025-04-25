@@ -6,11 +6,15 @@ import (
     "fmt"
     "log"
     "time"
+    "bytes"
+    "net/http"
+    "compress/gzip"
 
 
 )
 
 
+// SendJSONCollectedMetrics отправляет собранные метрики в формате JSON
 // SendJSONCollectedMetrics отправляет собранные метрики в формате JSON
 func (a *Agent) SendJSONCollectedMetrics() {
     for {
@@ -33,8 +37,20 @@ func (a *Agent) SendJSONCollectedMetrics() {
             // Формируем URL для отправки метрики
             url := fmt.Sprintf("http://%s/update", a.addr)
 
+            // Сжимаем данные с помощью Gzip
+            var buf bytes.Buffer
+            zw := gzip.NewWriter(&buf)
+            if _, err := zw.Write(data); err != nil {
+                log.Printf("Ошибка сжатия метрики: %v\n", err)
+                continue
+            }
+            if err := zw.Close(); err != nil {
+                log.Printf("Ошибка закрытия компрессора: %v\n", err)
+                continue
+            }
+
             // Отправляем метрику
-            if err := a.sendMetric(url, data, "application/json"); err != nil {
+            if err := a.doRequest(http.MethodPost, url, &buf, map[string]string{"Content-Type": "application/json", "Content-Encoding": "gzip"}); err != nil {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
             }
         }
@@ -56,8 +72,20 @@ func (a *Agent) SendJSONCollectedMetrics() {
             // Формируем URL для отправки метрики
             url := fmt.Sprintf("http://%s/update", a.addr)
 
+            // Сжимаем данные с помощью Gzip
+            var buf bytes.Buffer
+            zw := gzip.NewWriter(&buf)
+            if _, err := zw.Write(data); err != nil {
+                log.Printf("Ошибка сжатия метрики: %v\n", err)
+                continue
+            }
+            if err := zw.Close(); err != nil {
+                log.Printf("Ошибка закрытия компрессора: %v\n", err)
+                continue
+            }
+
             // Отправляем метрику
-            if err := a.sendMetric(url, data, "application/json"); err != nil {
+            if err := a.doRequest(http.MethodPost, url, &buf, map[string]string{"Content-Type": "application/json", "Content-Encoding": "gzip"}); err != nil {
                 log.Printf("Ошибка отправки метрики: %v\n", err)
             }
         }
