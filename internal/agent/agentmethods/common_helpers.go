@@ -1,20 +1,28 @@
 package agentmethods
 
 import (
-
-	"compress/gzip"
-
-	"fmt"
-	"io"
-
-	"net/http"
-//	"runtime/metrics"
-
+    "bytes"
+    "compress/gzip"
+    "fmt"
+    "io"
+    "log"
+    "net/http"
 )
 
+// compressPayload сжимает данные с помощью Gzip
+func (a *Agent) compressPayload(data []byte) ([]byte, error) {
+    var buf bytes.Buffer
+    zw := gzip.NewWriter(&buf)
+    if _, err := zw.Write(data); err != nil {
+        return nil, fmt.Errorf("ошибка сжатия метрики: %v", err)
+    }
+    if err := zw.Close(); err != nil {
+        return nil, fmt.Errorf("ошибка закрытия компрессора: %v", err)
+    }
+    return buf.Bytes(), nil
+}
 
-
-// Обработка ответа сервера
+// handleResponse обрабатывает ответ от сервера
 func (a *Agent) handleResponse(resp *http.Response) error {
     defer resp.Body.Close()
 
@@ -49,4 +57,9 @@ func (a *Agent) handleResponse(resp *http.Response) error {
     }
 
     return nil
+}
+
+// handleErrorAndContinue обрабатывает ошибку и продолжает выполнение
+func (a *Agent) handleErrorAndContinue(action string, err error) {
+    log.Printf("Ошибка %s: %v\n", action, err)
 }

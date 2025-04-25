@@ -1,18 +1,13 @@
 package agentmethods
 
 import (
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
+    "time"
 	"bytes"
-	"compress/gzip"
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-//	"runtime/metrics"
-	"time"
 )
-
-
-
 
 // SendJSONCollectedMetrics отправляет собранные метрики в формате JSON
 func (a *Agent) SendJSONCollectedMetrics() {
@@ -36,29 +31,22 @@ func (a *Agent) SendJSONCollectedMetrics() {
             // Формируем URL для отправки метрики
             url := fmt.Sprintf("http://%s/update/", a.addr)
 
-            // Сжимаем данные с помощью Gzip
-            var buf bytes.Buffer
-            zw := gzip.NewWriter(&buf)
-            if _, err := zw.Write(data); err != nil {
+            // Сжимаем данные
+            compressedData, err := a.compressPayload(data)
+            if err != nil {
                 a.handleErrorAndContinue("сжатия метрики", err)
-                continue
-            }
-            if err := zw.Close(); err != nil {
-                a.handleErrorAndContinue("закрытия компрессора", err)
                 continue
             }
 
             // Формируем запрос с Gzip-данными
-            req, err := http.NewRequest(http.MethodPost, url, &buf)
+            req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(compressedData))
             if err != nil {
                 a.handleErrorAndContinue("формирования запроса", err)
                 continue
             }
 
-            // Устанавливаем заголовки для сжатия
-            req.Header.Set("Content-Type", "application/json")
-            req.Header.Set("Content-Encoding", "gzip")
-            req.Header.Set("Accept-Encoding", "gzip")
+            // Устанавливаем заголовки
+            a.SetHeaders(req, "application/json")
 
             // Выполняем запрос
             resp, err := a.client.Do(req)
@@ -90,29 +78,22 @@ func (a *Agent) SendJSONCollectedMetrics() {
             // Формируем URL для отправки метрики
             url := fmt.Sprintf("http://%s/update/", a.addr)
 
-            // Сжимаем данные с помощью Gzip
-            var buf bytes.Buffer
-            zw := gzip.NewWriter(&buf)
-            if _, err := zw.Write(data); err != nil {
+            // Сжимаем данные
+            compressedData, err := a.compressPayload(data)
+            if err != nil {
                 a.handleErrorAndContinue("сжатия метрики", err)
-                continue
-            }
-            if err := zw.Close(); err != nil {
-                a.handleErrorAndContinue("закрытия компрессора", err)
                 continue
             }
 
             // Формируем запрос с Gzip-данными
-            req, err := http.NewRequest(http.MethodPost, url, &buf)
+            req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(compressedData))
             if err != nil {
                 a.handleErrorAndContinue("формирования запроса", err)
                 continue
             }
 
-            // Устанавливаем заголовки для сжатия
-            req.Header.Set("Content-Type", "application/json")
-            req.Header.Set("Content-Encoding", "gzip")
-            req.Header.Set("Accept-Encoding", "gzip")
+            // Устанавливаем заголовки
+            a.SetHeaders(req, "application/json")
 
             // Выполняем запрос
             resp, err := a.client.Do(req)

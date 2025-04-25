@@ -2,19 +2,12 @@ package agentmethods
 
 import (
 	"bytes"
-	"compress/gzip"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 )
-
-
-// Агент для сбора и отправки метрик
-
-
-
 
 // SendTextCollectedMetrics отправляет собранные метрики в текстовом формате
 func (a *Agent) SendTextCollectedMetrics() {
@@ -34,29 +27,22 @@ func (a *Agent) SendTextCollectedMetrics() {
             // Формируем URL для конкретной метрики
             textURL := fmt.Sprintf("%s/gauge/%s/%f", baseURL, gauge.ID, *(gauge.Value))
 
-            // Сжимаем URL в Gzip
-            var buffer bytes.Buffer
-            writer := gzip.NewWriter(&buffer)
-            if _, err := writer.Write([]byte(textURL)); err != nil {
+            // Сжимаем URL
+            compressedData, err := a.compressPayload([]byte(textURL))
+            if err != nil {
                 a.handleErrorAndContinue("сжатия URL", err)
-                continue
-            }
-            if err := writer.Close(); err != nil {
-                a.handleErrorAndContinue("закрытия Gzip-компрессора", err)
                 continue
             }
 
             // Формируем POST-запрос с Gzip-данными
-            req, err := http.NewRequest(http.MethodPost, baseURL+"/gauge", &buffer)
+            req, err := http.NewRequest(http.MethodPost, baseURL+"/gauge", bytes.NewBuffer(compressedData))
             if err != nil {
                 a.handleErrorAndContinue("формирования запроса", err)
                 continue
             }
 
-            // Добавляем заголовки для сжатия
-            req.Header.Set("Content-Type", "text/plain")
-            req.Header.Set("Content-Encoding", "gzip")
-            req.Header.Set("Accept-Encoding", "gzip")
+            // Устанавливаем заголовки
+            a.SetHeaders(req, "text/plain")
 
             // Выполняем запрос
             resp, err := a.client.Do(req)
@@ -81,29 +67,22 @@ func (a *Agent) SendTextCollectedMetrics() {
             // Формируем URL для конкретной метрики
             textURL := fmt.Sprintf("%s/counter/%s/%d", baseURL, counter.ID, *(counter.Delta))
 
-            // Сжимаем URL в Gzip
-            var buffer bytes.Buffer
-            writer := gzip.NewWriter(&buffer)
-            if _, err := writer.Write([]byte(textURL)); err != nil {
+            // Сжимаем URL
+            compressedData, err := a.compressPayload([]byte(textURL))
+            if err != nil {
                 a.handleErrorAndContinue("сжатия URL", err)
-                continue
-            }
-            if err := writer.Close(); err != nil {
-                a.handleErrorAndContinue("закрытия Gzip-компрессора", err)
                 continue
             }
 
             // Формируем POST-запрос с Gzip-данными
-            req, err := http.NewRequest(http.MethodPost, baseURL+"/counter", &buffer)
+            req, err := http.NewRequest(http.MethodPost, baseURL+"/counter", bytes.NewBuffer(compressedData))
             if err != nil {
                 a.handleErrorAndContinue("формирования запроса", err)
                 continue
             }
 
-            // Добавляем заголовки для сжатия
-            req.Header.Set("Content-Type", "text/plain")
-            req.Header.Set("Content-Encoding", "gzip")
-            req.Header.Set("Accept-Encoding", "gzip")
+            // Устанавливаем заголовки
+            a.SetHeaders(req, "text/plain")
 
             // Выполняем запрос
             resp, err := a.client.Do(req)
