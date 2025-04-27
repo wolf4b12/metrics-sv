@@ -75,7 +75,6 @@ func UpdateJSONHandler(storage UpdateStorage) http.HandlerFunc {
 
         // Читаем тело запроса
         body, err := io.ReadAll(r.Body)
-        defer r.Body.Close()
         if err != nil {
             http.Error(w, "Ошибка чтения тела запроса", http.StatusInternalServerError)
             return
