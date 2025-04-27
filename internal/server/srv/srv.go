@@ -71,6 +71,20 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     router.Post("/value/", handlers.PostJSONValueHandler(metricStorage))
     router.Get("/", handlers.ListMetricsHandler(metricStorage))
 
+
+    ticker := time.NewTicker(storeInterval)
+    go func() {
+        for range ticker.C {
+            err := metricStorage.SaveToFile(filePath)
+            if err != nil {
+                log.Printf("Ошибка при сохранении метрик: %v\n", err)
+            } else {
+                log.Println("Метрики успешно сохранены.")
+            }
+        }
+    }()
+
+
     // Создание сервера
     srv := &Server{
         router:   router,
