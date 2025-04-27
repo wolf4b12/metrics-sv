@@ -6,6 +6,7 @@ import (
     "os"
     "sync"
     "fmt"
+
 )
 
 // KVStorage — базовое хранилище ключ-значение
@@ -148,9 +149,10 @@ func (s *MetricStorage) LoadFromFile(filePath string) error {
                     s.kv.Set(name, v)
                 }
             case "counters":
-                if v, ok := value.(int64); ok {
-                    s.counters[name] = v
-                    s.kv.Set(name, v)
+                if v, ok := value.(float64); ok {
+                    intValue := int64(v)
+                    s.counters[name] = intValue
+                    s.kv.Set(name, intValue)
                 }
             }
         }
