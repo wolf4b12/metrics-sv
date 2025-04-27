@@ -73,3 +73,13 @@ func (s *MemStorage) AllMetrics() map[string]map[string]interface{} {
     }
     return result
 }
+
+// LoadFromFile загрузка из файла (для MemStorage ничего не делаем)
+func (s *MemStorage) LoadFromFile(_ string) error {
+    return nil
+}
+
+// SaveToFile сохранение в файл (для MemStorage ничего не делаем)
+func (s *MemStorage) SaveToFile(_ string) error {
+    return nil
+}
