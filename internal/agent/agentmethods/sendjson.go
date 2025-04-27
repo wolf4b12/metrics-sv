@@ -1,20 +1,23 @@
 package agentmethods
 
 import (
-    "bytes"
-//    "encoding/json"
+    "encoding/json"
     "fmt"
     "log"
     "net/http"
     "time"
-
-    metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metricsagent"
+    "bytes"
 )
 
+// sendSingleMetric отправляет одну метрику в формате JSON
+func (a *Agent) sendSingleMetric(metric interface{}, metricID string, checkRequired func() bool) {
+    if !checkRequired() {
+        log.Printf("Отсутствует обязательный параметр для метрики '%s'\n", metricID)
+        return
+    }
 
-// sendMetric отправляет одну метрику в виде POST-запроса
-func (a *Agent) sendMetric(metric metrics.Metrics) {
-    data, err := metric.MarshalJSON()
+    // Маршализируем метрику в JSON
+    data, err := json.Marshal(metric)
     if err != nil {
         a.handleErrorAndContinue("маршализации метрики в JSON", err)
         return
@@ -58,22 +61,20 @@ func (a *Agent) SendJSONCollectedMetrics() {
     for {
         a.mu.Lock()
 
-        // Отправляем Gauges
         for _, gauge := range a.Gauges {
-            if gauge.Value == nil {
-                log.Printf("Отсутствует обязательный параметр 'Value' для сенсора '%s'\n", gauge.ID)
-                continue
-            }
-            a.sendMetric(gauge)
+            a.sendSingleMetric(
+                gauge,
+                gauge.ID,
+                func() bool { return gauge.Value != nil },
+            )
         }
 
-        // Отправляем Counters
         for _, counter := range a.Counters {
-            if counter.Delta == nil {
-                log.Printf("Отсутствует обязательный параметр 'Delta' для счетчика '%s'\n", counter.ID)
-                continue
-            }
-            a.sendMetric(counter)
+            a.sendSingleMetric(
+                counter,
+                counter.ID,
+                func() bool { return counter.Delta != nil },
+            )
         }
 
         a.mu.Unlock()

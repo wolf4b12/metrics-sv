@@ -16,10 +16,11 @@ func main() {
     
     agent2 := agentmethods.NewAgent(poll, report, addr)
 
+go   agent2.StartCollectingMetrics()
 
-   go agent2.StartCollectingMetrics()
-   go  agent2.SendJSONCollectedMetrics()
-   go  agent2.SendTextCollectedMetrics()
+go  agent2.SendJSONCollectedMetrics()
+
+go   agent2.SendTextCollectedMetrics()
     
 
 

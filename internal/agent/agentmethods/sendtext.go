@@ -6,100 +6,76 @@ import (
 	"log"
 	"net/http"
 	"time"
-
 )
+
+// sendSingleTextMetric отправляет одну метрику в текстовом формате
+func (a *Agent) sendSingleTextMetric(
+	urlPath string,
+	payload string,
+	metricID string,
+	checkRequired func() bool,
+) {
+	if !checkRequired() {
+		log.Printf("Отсутствует обязательное поле для метрики '%s'\n", metricID)
+		return
+	}
+
+	// Сжимаем payload
+	compressedData, err := a.compressPayload([]byte(payload))
+	if err != nil {
+		a.handleErrorAndContinue("сжатия URL", err)
+		return
+	}
+
+	// Формируем POST-запрос с Gzip-данными
+	req, err := http.NewRequest(http.MethodPost, urlPath, bytes.NewBuffer(compressedData))
+	if err != nil {
+		a.handleErrorAndContinue("формирования запроса", err)
+		return
+	}
+
+	// Устанавливаем заголовки
+	a.SetHeaders(req, "text/plain")
+
+	// Выполняем запрос
+	resp, err := a.client.Do(req)
+	if err != nil {
+		a.handleErrorAndContinue("отправки метрики", err)
+		return
+	}
+
+	// Обрабатываем ответ
+	if err := a.handleResponse(resp); err != nil {
+		a.handleErrorAndContinue("обработки ответа", err)
+	}
+}
 
 // SendTextCollectedMetrics отправляет собранные метрики в текстовом формате
 func (a *Agent) SendTextCollectedMetrics() {
-    for {
-        a.mu.Lock()
+	for {
+		a.mu.Lock()
 
-        // Подготовим URL для отправки метрик
-        baseURL := fmt.Sprintf("http://%s/update", a.addr)
+		baseURL := fmt.Sprintf("http://%s/update", a.addr)
 
-        // Отправляем измерители (Gauges)
-        for _, gauge := range a.Gauges {
-            if gauge.Value == nil {
-                log.Printf("Отсутствует обязательное поле 'Value' для датчика '%s'\n", gauge.ID)
-                continue
-            }
+		for _, gauge := range a.Gauges {
+			a.sendSingleTextMetric(
+				baseURL+"/gauge",
+				fmt.Sprintf("%s/gauge/%s/%f", baseURL, gauge.ID, *(gauge.Value)),
+				gauge.ID,
+				func() bool { return gauge.Value != nil },
+			)
+		}
 
-            // Формируем URL для конкретной метрики
-            textURL := fmt.Sprintf("%s/gauge/%s/%f", baseURL, gauge.ID, *(gauge.Value))
+		for _, counter := range a.Counters {
+			a.sendSingleTextMetric(
+				baseURL+"/counter",
+				fmt.Sprintf("%s/counter/%s/%d", baseURL, counter.ID, *(counter.Delta)),
+				counter.ID,
+				func() bool { return counter.Delta != nil },
+			)
+		}
 
-            // Сжимаем URL
-            compressedData, err := a.compressPayload([]byte(textURL))
-            if err != nil {
-                a.handleErrorAndContinue("сжатия URL", err)
-                continue
-            }
-
-            // Формируем POST-запрос с Gzip-данными
-            req, err := http.NewRequest(http.MethodPost, baseURL+"/gauge", bytes.NewBuffer(compressedData))
-            if err != nil {
-                a.handleErrorAndContinue("формирования запроса", err)
-                continue
-            }
-
-            // Устанавливаем заголовки
-            a.SetHeaders(req, "text/plain")
-
-            // Выполняем запрос
-            resp, err := a.client.Do(req)
-            if err != nil {
-                a.handleErrorAndContinue("отправки метрики", err)
-                continue
-            }
-
-            // Обрабатываем ответ
-            if err := a.handleResponse(resp); err != nil {
-                a.handleErrorAndContinue("обработки ответа", err)
-            }
-        }
-
-        // Отправляем счетчики (Counters)
-        for _, counter := range a.Counters {
-            if counter.Delta == nil {
-                log.Printf("Отсутствует обязательное поле 'Delta' для счётчика '%s'\n", counter.ID)
-                continue
-            }
-
-            // Формируем URL для конкретной метрики
-            textURL := fmt.Sprintf("%s/counter/%s/%d", baseURL, counter.ID, *(counter.Delta))
-
-            // Сжимаем URL
-            compressedData, err := a.compressPayload([]byte(textURL))
-            if err != nil {
-                a.handleErrorAndContinue("сжатия URL", err)
-                continue
-            }
-
-            // Формируем POST-запрос с Gzip-данными
-            req, err := http.NewRequest(http.MethodPost, baseURL+"/counter", bytes.NewBuffer(compressedData))
-            if err != nil {
-                a.handleErrorAndContinue("формирования запроса", err)
-                continue
-            }
-
-            // Устанавливаем заголовки
-            a.SetHeaders(req, "text/plain")
-
-            // Выполняем запрос
-            resp, err := a.client.Do(req)
-            if err != nil {
-                a.handleErrorAndContinue("отправки метрики", err)
-                continue
-            }
-
-            // Обрабатываем ответ
-            if err := a.handleResponse(resp); err != nil {
-                a.handleErrorAndContinue("обработки ответа", err)
-            }
-        }
-
-        a.mu.Unlock()
-
-        // Ждем указанный интервал
-        time.Sleep(a.reportInterval)
-    }
+		a.mu.Unlock()
+		time.Sleep(a.reportInterval)
+	}
 }
