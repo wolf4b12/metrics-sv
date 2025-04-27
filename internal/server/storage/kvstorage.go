@@ -10,32 +10,26 @@ import (
 
 // KVStorage — базовое хранилище ключ-значение
 type KVStorage struct {
-    data map[string]interface{}
+    data map[string]any
     mu   sync.RWMutex
 }
 
 // NewKVStorage создаёт новое KV-хранилище
 func NewKVStorage() *KVStorage {
     return &KVStorage{
-        data: make(map[string]interface{}),
+        data: make(map[string]any),
     }
 }
 
-
-
-
-
-
-
 // Set устанавливает значение по ключу
-func (s *KVStorage) Set(key string, value interface{}) {
+func (s *KVStorage) Set(key string, value any) {
     s.mu.Lock()
     defer s.mu.Unlock()
     s.data[key] = value
 }
 
 // Get получает значение по ключу
-func (s *KVStorage) Get(key string) (interface{}, bool) {
+func (s *KVStorage) Get(key string) (any, bool) {
     s.mu.RLock()
     defer s.mu.RUnlock()
     value, exists := s.data[key]
@@ -50,7 +44,7 @@ func (s *KVStorage) Delete(key string) {
 }
 
 // All возвращает все данные
-func (s *KVStorage) All() map[string]interface{} {
+func (s *KVStorage) All() map[string]any {
     s.mu.RLock()
     defer s.mu.RUnlock()
     return s.data
@@ -62,13 +56,7 @@ type MetricStorage struct {
     gauges   map[string]float64
     counters map[string]int64
     mu       sync.RWMutex
-    filePath string
-    data     map[string]map[string]interface{}
 }
-
-
-
-
 
 // NewMetricStorage создаёт новый адаптер для работы с метриками
 func NewMetricStorage(kv *KVStorage) *MetricStorage {
@@ -122,15 +110,15 @@ func (s *MetricStorage) GetCounter(name string) (int64, error) {
 }
 
 // AllMetrics возвращает список всех существующих метрик
-func (s *MetricStorage) AllMetrics() map[string]map[string]interface{} {
+func (s *MetricStorage) AllMetrics() map[string]map[string]any {
     s.mu.RLock()
     defer s.mu.RUnlock()
-    result := make(map[string]map[string]interface{})
-    result["gauges"] = make(map[string]interface{})
+    result := make(map[string]map[string]any)
+    result["gauges"] = make(map[string]any)
     for k, v := range s.gauges {
         result["gauges"][k] = v
     }
-    result["counters"] = make(map[string]interface{})
+    result["counters"] = make(map[string]any)
     for k, v := range s.counters {
         result["counters"][k] = v
     }
@@ -144,16 +132,46 @@ func (s *MetricStorage) LoadFromFile(filePath string) error {
         return err
     }
 
-    err = json.Unmarshal(rawData, &s.data)
-    if err != nil {
+    var loadedData map[string]map[string]any
+    if err := json.Unmarshal(rawData, &loadedData); err != nil {
         return fmt.Errorf("ошибка разбора JSON: %v", err)
+    }
+
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    for metricType, metrics := range loadedData {
+        for name, value := range metrics {
+            switch metricType {
+            case "gauges":
+                if v, ok := value.(float64); ok {
+                    s.gauges[name] = v
+                    s.kv.Set(name, v)
+                }
+            case "counters":
+                if v, ok := value.(int64); ok {
+                    s.counters[name] = v
+                    s.kv.Set(name, v)
+                }
+            }
+        }
     }
     return nil
 }
 
 // SaveToFile сохраняет текущее состояние метрик в файл
 func (s *MetricStorage) SaveToFile(filePath string) error {
-    rawData, err := json.MarshalIndent(s.data, "", "\t")
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    data := make(map[string]map[string]any)
+    data["gauges"] = make(map[string]any)
+    for k, v := range s.gauges {
+        data["gauges"][k] = v
+    }
+    data["counters"] = make(map[string]any)
+    for k, v := range s.counters {
+        data["counters"][k] = v
+    }
+    rawData, err := json.MarshalIndent(data, "", "\t")
     if err != nil {
         return err
     }
