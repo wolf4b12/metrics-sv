@@ -5,6 +5,7 @@ import (
     "errors"
     "os"
     "sync"
+    "fmt"
 )
 
 // KVStorage — базовое хранилище ключ-значение
@@ -19,6 +20,12 @@ func NewKVStorage() *KVStorage {
         data: make(map[string]interface{}),
     }
 }
+
+
+
+
+
+
 
 // Set устанавливает значение по ключу
 func (s *KVStorage) Set(key string, value interface{}) {
@@ -55,7 +62,13 @@ type MetricStorage struct {
     gauges   map[string]float64
     counters map[string]int64
     mu       sync.RWMutex
+    filePath string
+    data     map[string]map[string]interface{}
 }
+
+
+
+
 
 // NewMetricStorage создаёт новый адаптер для работы с метриками
 func NewMetricStorage(kv *KVStorage) *MetricStorage {
@@ -131,35 +144,16 @@ func (s *MetricStorage) LoadFromFile(filePath string) error {
         return err
     }
 
-    var loadedData map[string]interface{}
-    if err := json.Unmarshal(rawData, &loadedData); err != nil {
-        return errors.New("ошибка разбора JSON")
-    }
-
-    s.mu.Lock()
-    defer s.mu.Unlock()
-    for k, v := range loadedData {
-        if value, ok := v.(float64); ok {
-            s.gauges[k] = value
-        } else if value, ok := v.(int64); ok {
-            s.counters[k] = value
-        }
+    err = json.Unmarshal(rawData, &s.data)
+    if err != nil {
+        return fmt.Errorf("ошибка разбора JSON: %v", err)
     }
     return nil
 }
 
 // SaveToFile сохраняет текущее состояние метрик в файл
 func (s *MetricStorage) SaveToFile(filePath string) error {
-    s.mu.RLock()
-    defer s.mu.RUnlock()
-    data := make(map[string]interface{})
-    for k, v := range s.gauges {
-        data[k] = v
-    }
-    for k, v := range s.counters {
-        data[k] = v
-    }
-    rawData, err := json.MarshalIndent(data, "", "\t")
+    rawData, err := json.MarshalIndent(s.data, "", "\t")
     if err != nil {
         return err
     }
