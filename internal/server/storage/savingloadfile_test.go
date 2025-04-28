@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"sync"
 	"testing"
 	"time"
 )
@@ -11,9 +10,7 @@ func TestMetricStorage_LoadFromFile(t *testing.T) {
 		kv         *KVStorage
 		gauges     map[string]float64
 		counters   map[string]int64
-		mu         sync.RWMutex
 		saveTicker *time.Ticker
-		wg         sync.WaitGroup
 		stopCh     chan struct{}
 	}
 	type args struct {
@@ -33,9 +30,7 @@ func TestMetricStorage_LoadFromFile(t *testing.T) {
 				kv:         tt.fields.kv,
 				gauges:     tt.fields.gauges,
 				counters:   tt.fields.counters,
-				mu:         tt.fields.mu,
 				saveTicker: tt.fields.saveTicker,
-				wg:         tt.fields.wg,
 				stopCh:     tt.fields.stopCh,
 			}
 			if err := s.LoadFromFile(tt.args.filePath); (err != nil) != tt.wantErr {
@@ -50,9 +45,7 @@ func TestMetricStorage_SaveToFile(t *testing.T) {
 		kv         *KVStorage
 		gauges     map[string]float64
 		counters   map[string]int64
-		mu         sync.RWMutex
 		saveTicker *time.Ticker
-		wg         sync.WaitGroup
 		stopCh     chan struct{}
 	}
 	type args struct {
@@ -72,9 +65,7 @@ func TestMetricStorage_SaveToFile(t *testing.T) {
 				kv:         tt.fields.kv,
 				gauges:     tt.fields.gauges,
 				counters:   tt.fields.counters,
-				mu:         tt.fields.mu,
 				saveTicker: tt.fields.saveTicker,
-				wg:         tt.fields.wg,
 				stopCh:     tt.fields.stopCh,
 			}
 			if err := s.SaveToFile(tt.args.filePath); (err != nil) != tt.wantErr {
@@ -89,9 +80,7 @@ func TestMetricStorage_StartPeriodicSaving(t *testing.T) {
 		kv         *KVStorage
 		gauges     map[string]float64
 		counters   map[string]int64
-		mu         sync.RWMutex
 		saveTicker *time.Ticker
-		wg         sync.WaitGroup
 		stopCh     chan struct{}
 	}
 	type args struct {
@@ -110,9 +99,7 @@ func TestMetricStorage_StartPeriodicSaving(t *testing.T) {
 				kv:         tt.fields.kv,
 				gauges:     tt.fields.gauges,
 				counters:   tt.fields.counters,
-				mu:         tt.fields.mu,
 				saveTicker: tt.fields.saveTicker,
-				wg:         tt.fields.wg,
 				stopCh:     tt.fields.stopCh,
 			}
 			s.StartPeriodicSaving(tt.args.filePath)

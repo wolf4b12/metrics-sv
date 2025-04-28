@@ -42,7 +42,6 @@ func TestKVStorage_Set(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &KVStorage{
 				data: tt.fields.data,
-				mu:   tt.fields.mu,
 			}
 			s.Set(tt.args.key, tt.args.value)
 		})
@@ -70,7 +69,6 @@ func TestKVStorage_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &KVStorage{
 				data: tt.fields.data,
-				mu:   tt.fields.mu,
 			}
 			got, got1 := s.Get(tt.args.key)
 			if !reflect.DeepEqual(got, tt.want) {
@@ -86,7 +84,6 @@ func TestKVStorage_Get(t *testing.T) {
 func TestKVStorage_Delete(t *testing.T) {
 	type fields struct {
 		data map[string]any
-		mu   sync.RWMutex
 	}
 	type args struct {
 		key string
@@ -102,7 +99,6 @@ func TestKVStorage_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &KVStorage{
 				data: tt.fields.data,
-				mu:   tt.fields.mu,
 			}
 			s.Delete(tt.args.key)
 		})
@@ -112,7 +108,6 @@ func TestKVStorage_Delete(t *testing.T) {
 func TestKVStorage_All(t *testing.T) {
 	type fields struct {
 		data map[string]any
-		mu   sync.RWMutex
 	}
 	tests := []struct {
 		name   string
@@ -125,7 +120,6 @@ func TestKVStorage_All(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &KVStorage{
 				data: tt.fields.data,
-				mu:   tt.fields.mu,
 			}
 			if got := s.All(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("KVStorage.All() = %v, want %v", got, tt.want)
