@@ -40,15 +40,7 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     }
 
     // Загрузка данных из файла при старте, если указано
-   if restore {
-        err := metricStorage.LoadFromFile(filePath)
-        if err != nil {
-            log.Printf("Не удалось загрузить предыдущие метрики: %v\n", err)
-        } else {
-            log.Println("Предыдущие метрики успешно загружены.")
-        }
 
-    }
 
 
     router := chi.NewRouter()
