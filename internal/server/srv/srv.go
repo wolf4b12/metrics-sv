@@ -67,7 +67,6 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     router.Get("/", handlers.ListMetricsHandler(metricStorage))
 
 
-
     // Создание сервера
     srv := &Server{
         router:   router,
@@ -81,7 +80,6 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
 
     return srv
 }
-
 
 
 func (s *Server) Run() error {
