@@ -8,6 +8,8 @@ import (
     "fmt"
     "log"
     "time"
+    "os/signal"
+    "syscall"
 
 
 )
@@ -83,6 +85,8 @@ func NewMetricStorage(restore bool, storeInterval time.Duration, filePath string
         ms.wg.Add(1)
         go ms.startPeriodicSaving(filePath)
     }
+    // Обработка сигналов завершения
+
 
     if restore {
         err := ms.LoadFromFile(filePath)
@@ -93,6 +97,11 @@ func NewMetricStorage(restore bool, storeInterval time.Duration, filePath string
         }
 
     }
+
+    // Обработка сигналов завершения
+    ms.wg.Add(1)
+    go ms.handleSignals(filePath)
+
 
     return ms, nil
 
@@ -230,4 +239,34 @@ func (ms *MetricStorage) startPeriodicSaving(filePath string) {
             }
         }
     }
+}
+
+
+// handleSignals слушает ОС-сигналы и инициирует завершение с сохранением
+func (ms *MetricStorage) handleSignals(filePath string) {
+    defer ms.wg.Done()
+    sigChan := make(chan os.Signal, 1)
+    signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+    <-sigChan
+    log.Println("Получен сигнал завершения. Сохранение метрик...")
+    err := ms.SaveToFile(filePath)
+    if err != nil {
+        log.Printf("Ошибка при сохранении метрик: %v\n", err)
+    } else {
+        log.Println("Метрики успешно сохранены.")
+    }
+    close(ms.stopCh)
+}
+
+// Stop останавливает сервер и закрывает ресурсы
+func (ms *MetricStorage) Stop() {
+    if ms.saveTicker != nil {
+        ms.saveTicker.Stop()
+    }
+    ms.wg.Wait()
+}
+
+// Закрытие канала
+func (ms *MetricStorage) Close() {
+    ms.Stop()
 }

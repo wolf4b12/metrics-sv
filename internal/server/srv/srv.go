@@ -4,11 +4,9 @@ import (
     "fmt"
     "log"
     "net/http"
-    "os"
     "time"
     "sync"
-    "syscall"
-    "os/signal"
+
     
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
@@ -80,32 +78,11 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
         storage: metricStorage,
     }
 
-    // Запуск периодического сохранения, если интервал больше 0
-
-
-    // Обработка сигналов для сохранения при завершении
-    srv.wg.Add(1)
-    go srv.handleSignals(filePath)
 
     return srv
 }
 
 
-// Обработка сигналов для сохранения при завершении
-func (s *Server) handleSignals(filePath string) {
-    defer s.wg.Done()
-    sigChan := make(chan os.Signal, 1)
-    signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-    <-sigChan
-    log.Println("Получен сигнал завершения. Сохранение метрик...")
-    err := s.storage.SaveToFile(filePath)
-    if err != nil {
-        log.Printf("Ошибка при сохранении метрик: %v\n", err)
-    } else {
-        log.Println("Метрики успешно сохранены.")
-    }
-    s.server.Shutdown(nil)
-}
 
 func (s *Server) Run() error {
     log.Printf("Запуск сервера на http://%s\n", s.server.Addr)
