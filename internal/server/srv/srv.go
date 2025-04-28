@@ -31,10 +31,9 @@ type Server struct {
 // Запуск сервера
 func NewServer(addr string, restore bool, storeInterval time.Duration, filePath string, ) *Server {
     // Создание KV-хранилища
-    kvStorage := storage.NewKVStorage()
 
     // Создание адаптера для работы с метриками
-    metricStorage := storage.NewMetricStorage(kvStorage)
+    metricStorage := storage.NewMetricStorage()
 
     // Загрузка данных из файла при старте, если указано
     if restore {

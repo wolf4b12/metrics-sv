@@ -60,9 +60,9 @@ type MetricStorage struct {
 }
 
 // NewMetricStorage создаёт новый адаптер для работы с метриками
-func NewMetricStorage(kv *KVStorage) *MetricStorage {
+func NewMetricStorage() *MetricStorage {
     return &MetricStorage{
-        kv:       kv,
+        kv:       NewKVStorage(),
         gauges:   make(map[string]float64),
         counters: make(map[string]int64),
     }
