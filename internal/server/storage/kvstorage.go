@@ -69,7 +69,7 @@ type MetricStorage struct {
 func NewMetricStorage(restore bool, storeInterval time.Duration, filePath string) (*MetricStorage, error) {
 
 
-    ms := &MetricStorage{
+    s := &MetricStorage{
         kv:       NewKVStorage(),
         gauges:   make(map[string]float64),
         counters: make(map[string]int64),
@@ -79,15 +79,15 @@ func NewMetricStorage(restore bool, storeInterval time.Duration, filePath string
 
     // Установка интервала сохранения
     if storeInterval > 0 {
-        ms.saveTicker = time.NewTicker(storeInterval)
-        ms.wg.Add(1)
-        go ms.startPeriodicSaving(filePath)
+        s.saveTicker = time.NewTicker(storeInterval)
+        s.wg.Add(1)
+        go s.startPeriodicSaving(filePath)
     }
     // Обработка сигналов завершения
 
 
     if restore {
-        err := ms.LoadFromFile(filePath)
+        err := s.LoadFromFile(filePath)
         if err != nil {
             log.Printf("Не удалось загрузить предыдущие метрики: %v\n", err)
         } else {
@@ -99,7 +99,7 @@ func NewMetricStorage(restore bool, storeInterval time.Duration, filePath string
 
 
 
-    return ms, nil
+    return s, nil
 
     
 
@@ -223,14 +223,14 @@ func (s *MetricStorage) SaveToFile(filePath string) error {
 
 
 
-func (ms *MetricStorage) startPeriodicSaving(filePath string) {
-    defer ms.wg.Done()
+func (s *MetricStorage) startPeriodicSaving(filePath string) {
+    defer s.wg.Done()
     for {
         select {
-        case <-ms.stopCh:
+        case <-s.stopCh:
             return
-        case <-ms.saveTicker.C:
-            err := ms.SaveToFile(filePath)
+        case <-s.saveTicker.C:
+            err := s.SaveToFile(filePath)
             if err != nil {
                 log.Printf("Ошибка при сохранении метрик: %v\n", err)
             } else {
