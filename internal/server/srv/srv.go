@@ -33,17 +33,23 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     // Создание KV-хранилища
 
     // Создание адаптера для работы с метриками
-    metricStorage := storage.NewMetricStorage()
+    metricStorage, err :=  storage.NewMetricStorage(restore, filePath) 
+
+    if err != nil {
+        log.Fatalf("Не удалось создать хранилище метрик: %v", err)
+    }
 
     // Загрузка данных из файла при старте, если указано
-    if restore {
+   if restore {
         err := metricStorage.LoadFromFile(filePath)
         if err != nil {
             log.Printf("Не удалось загрузить предыдущие метрики: %v\n", err)
         } else {
             log.Println("Предыдущие метрики успешно загружены.")
         }
+
     }
+
 
     router := chi.NewRouter()
 

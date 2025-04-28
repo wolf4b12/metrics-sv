@@ -6,6 +6,7 @@ import (
     "os"
     "sync"
     "fmt"
+    "log"
 
 )
 
@@ -60,12 +61,27 @@ type MetricStorage struct {
 }
 
 // NewMetricStorage создаёт новый адаптер для работы с метриками
-func NewMetricStorage() *MetricStorage {
-    return &MetricStorage{
+func NewMetricStorage(restore bool, filePath string) (*MetricStorage, error) {
+
+
+    ms := &MetricStorage{
         kv:       NewKVStorage(),
         gauges:   make(map[string]float64),
         counters: make(map[string]int64),
     }
+
+    if restore {
+        err := ms.LoadFromFile(filePath)
+        if err != nil {
+            log.Printf("Не удалось загрузить предыдущие метрики: %v\n", err)
+        } else {
+            log.Println("Предыдущие метрики успешно загружены.")
+        }
+
+    }
+
+    return ms, nil
+
 }
 
 // UpdateGauge обновляет значение gauge-метрики
