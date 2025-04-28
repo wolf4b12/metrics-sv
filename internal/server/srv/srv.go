@@ -33,7 +33,7 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     // Создание KV-хранилища
 
     // Создание адаптера для работы с метриками
-    metricStorage, err :=  storage.NewMetricStorage(restore, filePath) 
+    metricStorage, err :=  storage.NewMetricStorage(restore, storeInterval, filePath) 
 
     if err != nil {
         log.Fatalf("Не удалось создать хранилище метрик: %v", err)
@@ -81,11 +81,7 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     }
 
     // Запуск периодического сохранения, если интервал больше 0
-    if storeInterval > 0 {
-        srv.ticker = time.NewTicker(time.Duration(storeInterval) * time.Second)
-        srv.wg.Add(1)
-        go srv.periodicSave(filePath)
-    }
+
 
     // Обработка сигналов для сохранения при завершении
     srv.wg.Add(1)
@@ -94,18 +90,6 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     return srv
 }
 
-// Периодическое сохранение метрик
-func (s *Server) periodicSave(filePath string) {
-    defer s.wg.Done()
-    for range s.ticker.C {
-        err := s.storage.SaveToFile(filePath)
-        if err != nil {
-            log.Printf("Ошибка при сохранении метрик: %v\n", err)
-        } else {
-            log.Println("Метрики успешно сохранены.")
-        }
-    }
-}
 
 // Обработка сигналов для сохранения при завершении
 func (s *Server) handleSignals(filePath string) {

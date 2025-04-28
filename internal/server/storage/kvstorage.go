@@ -7,6 +7,8 @@ import (
     "sync"
     "fmt"
     "log"
+    "time"
+
 
 )
 
@@ -58,16 +60,28 @@ type MetricStorage struct {
     gauges   map[string]float64
     counters map[string]int64
     mu       sync.RWMutex
+    saveTicker      *time.Ticker
+    wg              sync.WaitGroup
+    stopCh          chan struct{}
 }
 
 // NewMetricStorage создаёт новый адаптер для работы с метриками
-func NewMetricStorage(restore bool, filePath string) (*MetricStorage, error) {
+func NewMetricStorage(restore bool, storeInterval time.Duration, filePath string) (*MetricStorage, error) {
 
 
     ms := &MetricStorage{
         kv:       NewKVStorage(),
         gauges:   make(map[string]float64),
         counters: make(map[string]int64),
+        saveTicker: nil,
+        stopCh:    make(chan struct{}),
+    }
+
+    // Установка интервала сохранения
+    if storeInterval > 0 {
+        ms.saveTicker = time.NewTicker(storeInterval)
+        ms.wg.Add(1)
+        go ms.startPeriodicSaving(filePath)
     }
 
     if restore {
@@ -81,6 +95,8 @@ func NewMetricStorage(restore bool, filePath string) (*MetricStorage, error) {
     }
 
     return ms, nil
+
+    
 
 }
 
@@ -194,4 +210,24 @@ func (s *MetricStorage) SaveToFile(filePath string) error {
         return err
     }
     return os.WriteFile(filePath, rawData, 0644)
+}
+
+
+
+
+func (ms *MetricStorage) startPeriodicSaving(filePath string) {
+    defer ms.wg.Done()
+    for {
+        select {
+        case <-ms.stopCh:
+            return
+        case <-ms.saveTicker.C:
+            err := ms.SaveToFile(filePath)
+            if err != nil {
+                log.Printf("Ошибка при сохранении метрик: %v\n", err)
+            } else {
+                log.Println("Метрики успешно сохранены.")
+            }
+        }
+    }
 }
