@@ -2,7 +2,6 @@ package storage
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 )
@@ -40,9 +39,7 @@ func TestMetricStorage_UpdateGauge(t *testing.T) {
 		kv         *KVStorage
 		gauges     map[string]float64
 		counters   map[string]int64
-		mu         sync.RWMutex
 		saveTicker *time.Ticker
-		wg         sync.WaitGroup
 		stopCh     chan struct{}
 	}
 	type args struct {
@@ -62,9 +59,7 @@ func TestMetricStorage_UpdateGauge(t *testing.T) {
 				kv:         tt.fields.kv,
 				gauges:     tt.fields.gauges,
 				counters:   tt.fields.counters,
-				mu:         tt.fields.mu,
 				saveTicker: tt.fields.saveTicker,
-				wg:         tt.fields.wg,
 				stopCh:     tt.fields.stopCh,
 			}
 			s.UpdateGauge(tt.args.name, tt.args.value)
@@ -77,9 +72,7 @@ func TestMetricStorage_UpdateCounter(t *testing.T) {
 		kv         *KVStorage
 		gauges     map[string]float64
 		counters   map[string]int64
-		mu         sync.RWMutex
 		saveTicker *time.Ticker
-		wg         sync.WaitGroup
 		stopCh     chan struct{}
 	}
 	type args struct {
@@ -99,9 +92,7 @@ func TestMetricStorage_UpdateCounter(t *testing.T) {
 				kv:         tt.fields.kv,
 				gauges:     tt.fields.gauges,
 				counters:   tt.fields.counters,
-				mu:         tt.fields.mu,
 				saveTicker: tt.fields.saveTicker,
-				wg:         tt.fields.wg,
 				stopCh:     tt.fields.stopCh,
 			}
 			s.UpdateCounter(tt.args.name, tt.args.value)
@@ -114,9 +105,7 @@ func TestMetricStorage_GetGauge(t *testing.T) {
 		kv         *KVStorage
 		gauges     map[string]float64
 		counters   map[string]int64
-		mu         sync.RWMutex
 		saveTicker *time.Ticker
-		wg         sync.WaitGroup
 		stopCh     chan struct{}
 	}
 	type args struct {
@@ -137,9 +126,7 @@ func TestMetricStorage_GetGauge(t *testing.T) {
 				kv:         tt.fields.kv,
 				gauges:     tt.fields.gauges,
 				counters:   tt.fields.counters,
-				mu:         tt.fields.mu,
 				saveTicker: tt.fields.saveTicker,
-				wg:         tt.fields.wg,
 				stopCh:     tt.fields.stopCh,
 			}
 			got, err := s.GetGauge(tt.args.name)
@@ -159,9 +146,7 @@ func TestMetricStorage_GetCounter(t *testing.T) {
 		kv         *KVStorage
 		gauges     map[string]float64
 		counters   map[string]int64
-		mu         sync.RWMutex
 		saveTicker *time.Ticker
-		wg         sync.WaitGroup
 		stopCh     chan struct{}
 	}
 	type args struct {
@@ -182,9 +167,7 @@ func TestMetricStorage_GetCounter(t *testing.T) {
 				kv:         tt.fields.kv,
 				gauges:     tt.fields.gauges,
 				counters:   tt.fields.counters,
-				mu:         tt.fields.mu,
 				saveTicker: tt.fields.saveTicker,
-				wg:         tt.fields.wg,
 				stopCh:     tt.fields.stopCh,
 			}
 			got, err := s.GetCounter(tt.args.name)
@@ -204,9 +187,7 @@ func TestMetricStorage_AllMetrics(t *testing.T) {
 		kv         *KVStorage
 		gauges     map[string]float64
 		counters   map[string]int64
-		mu         sync.RWMutex
 		saveTicker *time.Ticker
-		wg         sync.WaitGroup
 		stopCh     chan struct{}
 	}
 	tests := []struct {
@@ -222,9 +203,7 @@ func TestMetricStorage_AllMetrics(t *testing.T) {
 				kv:         tt.fields.kv,
 				gauges:     tt.fields.gauges,
 				counters:   tt.fields.counters,
-				mu:         tt.fields.mu,
 				saveTicker: tt.fields.saveTicker,
-				wg:         tt.fields.wg,
 				stopCh:     tt.fields.stopCh,
 			}
 			if got := s.AllMetrics(); !reflect.DeepEqual(got, tt.want) {
