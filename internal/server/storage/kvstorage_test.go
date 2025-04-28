@@ -2,7 +2,6 @@ package storage
 
 import (
 	"reflect"
-	"sync"
 	"testing"
 )
 
@@ -25,7 +24,6 @@ func TestNewKVStorage(t *testing.T) {
 func TestKVStorage_Set(t *testing.T) {
 	type fields struct {
 		data map[string]any
-		mu   sync.RWMutex
 	}
 	type args struct {
 		key   string
@@ -51,7 +49,6 @@ func TestKVStorage_Set(t *testing.T) {
 func TestKVStorage_Get(t *testing.T) {
 	type fields struct {
 		data map[string]any
-		mu   sync.RWMutex
 	}
 	type args struct {
 		key string
