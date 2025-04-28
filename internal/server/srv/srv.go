@@ -39,7 +39,7 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
         log.Fatalf("Не удалось создать хранилище метрик: %v", err)
     }
 
-    // Загрузка данных из файла при старте, если указано
+    // Загрузка данных из файла при старте, если указано 
 
 
 
