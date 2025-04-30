@@ -14,13 +14,13 @@ func main() {
 
     poll, report, addr := parseflags.ParseFlags()
     
-    agent2 := agentmethods.NewAgent(poll, report, addr)
+    agent := agentmethods.NewAgent(poll, report, addr)
 
-go   agent2.StartCollectingMetrics()
+go   agent.StartCollectingMetrics()
 
-go  agent2.SendJSONCollectedMetrics()
+go  agent.SendJSONCollectedMetrics()
 
-go   agent2.SendTextCollectedMetrics()
+go   agent.SendTextCollectedMetrics()
     
 
 

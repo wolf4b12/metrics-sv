@@ -7,12 +7,12 @@ import (
 )
 
 // AllMetricsStorage интерфейс для получения всех метрик
-type AllMetricsStorage interface {
+type allMetricsStorage interface {
     AllMetrics() map[string]map[string]interface{}
 }
 
 // ListMetricsHandler обработчик для получения списка всех метрик
-func ListMetricsHandler(storage AllMetricsStorage) http.HandlerFunc {
+func ListMetricsHandler(storage allMetricsStorage) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
