@@ -5,8 +5,6 @@ import (
     "os"
     "fmt"
     "log"
-
-
 )
 
 // LoadFromFile загружает метрики из файла
@@ -28,14 +26,14 @@ func (s *MetricStorage) LoadFromFile(filePath string) error {
             switch metricType {
             case "gauges":
                 if v, ok := value.(float64); ok {
-                    s.gauges[name] = v
-                    s.kv.Set(name, v)
+                    s.metrics[name] = MetricValue{Type: Gauge, Value: v}
+                    s.kv.Set(name, MetricValue{Type: Gauge, Value: v})
                 }
             case "counters":
                 if v, ok := value.(float64); ok {
                     intValue := int64(v)
-                    s.counters[name] = intValue
-                    s.kv.Set(name, intValue)
+                    s.metrics[name] = MetricValue{Type: Counter, Value: intValue}
+                    s.kv.Set(name, MetricValue{Type: Counter, Value: intValue})
                 }
             }
         }
@@ -49,12 +47,13 @@ func (s *MetricStorage) SaveToFile(filePath string) error {
     defer s.mu.RUnlock()
     data := make(map[string]map[string]any)
     data["gauges"] = make(map[string]any)
-    for k, v := range s.gauges {
-        data["gauges"][k] = v
-    }
     data["counters"] = make(map[string]any)
-    for k, v := range s.counters {
-        data["counters"][k] = v
+    for k, v := range s.metrics {
+        if v.Type == Gauge {
+            data["gauges"][k] = v.Value
+        } else if v.Type == Counter {
+            data["counters"][k] = v.Value
+        }
     }
     rawData, err := json.MarshalIndent(data, "", "\t")
     if err != nil {
@@ -62,7 +61,6 @@ func (s *MetricStorage) SaveToFile(filePath string) error {
     }
     return os.WriteFile(filePath, rawData, 0644)
 }
-
 
 func (s *MetricStorage) StartPeriodicSaving(filePath string) {
     defer s.wg.Done()
@@ -80,4 +78,3 @@ func (s *MetricStorage) StartPeriodicSaving(filePath string) {
         }
     }
 }
-

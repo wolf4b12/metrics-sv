@@ -15,11 +15,24 @@ type KVStorageInterface interface {
     All() map[string]any
 }
 
+// MetricType тип метрики
+type MetricType string
+
+const (
+    Gauge   MetricType = "gauge"
+    Counter MetricType = "counter"
+)
+
+// MetricValue значение метрики
+type MetricValue struct {
+    Type  MetricType
+    Value any
+}
+
 // MetricStorage — адаптер для работы с метриками
 type MetricStorage struct {
     kv       KVStorageInterface
-    gauges   map[string]float64
-    counters map[string]int64
+    metrics  map[string]MetricValue
     mu       sync.RWMutex
     saveTicker      *time.Ticker
     wg              sync.WaitGroup
@@ -30,8 +43,7 @@ type MetricStorage struct {
 func NewMetricStorage(kv KVStorageInterface, restore bool, storeInterval time.Duration, filePath string) (*MetricStorage, error) {
     s := &MetricStorage{
         kv:       kv,
-        gauges:   make(map[string]float64),
-        counters: make(map[string]int64),
+        metrics:  make(map[string]MetricValue),
         saveTicker: nil,
         stopCh:    make(chan struct{}),
     }
@@ -60,42 +72,46 @@ func NewMetricStorage(kv KVStorageInterface, restore bool, storeInterval time.Du
 func (s *MetricStorage) UpdateGauge(name string, value float64) {
     s.mu.Lock()
     defer s.mu.Unlock()
-    s.gauges[name] = value
-    s.kv.Set(name, value)
+    s.metrics[name] = MetricValue{Type: Gauge, Value: value}
+    s.kv.Set(name, MetricValue{Type: Gauge, Value: value})
 }
 
 // UpdateCounter увеличивает значение counter-метрики
 func (s *MetricStorage) UpdateCounter(name string, value int64) {
     s.mu.Lock()
     defer s.mu.Unlock()
-    currentValue, exists := s.counters[name]
+    currentValue, exists := s.metrics[name]
     if !exists {
-        currentValue = 0
+        currentValue = MetricValue{Type: Counter, Value: int64(0)}
     }
-    s.counters[name] = currentValue + value
-    s.kv.Set(name, currentValue+value)
+    if currentValue.Type != Counter {
+        log.Printf("Неверный тип метрики для %s: ожидается counter, получено %s\n", name, currentValue.Type)
+        return
+    }
+    s.metrics[name] = MetricValue{Type: Counter, Value: currentValue.Value.(int64) + value}
+    s.kv.Set(name, MetricValue{Type: Counter, Value: currentValue.Value.(int64) + value})
 }
 
 // GetGauge получает текущее значение gauge-метрики
 func (s *MetricStorage) GetGauge(name string) (float64, error) {
     s.mu.RLock()
     defer s.mu.RUnlock()
-    value, exists := s.gauges[name]
-    if !exists {
+    value, exists := s.metrics[name]
+    if !exists || value.Type != Gauge {
         return 0, errors.New("metric not found")
     }
-    return value, nil
+    return value.Value.(float64), nil
 }
 
 // GetCounter получает текущее значение counter-метрики
 func (s *MetricStorage) GetCounter(name string) (int64, error) {
     s.mu.RLock()
     defer s.mu.RUnlock()
-    value, exists := s.counters[name]
-    if !exists {
+    value, exists := s.metrics[name]
+    if !exists || value.Type != Counter {
         return 0, errors.New("metric not found")
     }
-    return value, nil
+    return value.Value.(int64), nil
 }
 
 // AllMetrics возвращает список всех существующих метрик
@@ -104,12 +120,13 @@ func (s *MetricStorage) AllMetrics() map[string]map[string]any {
     defer s.mu.RUnlock()
     result := make(map[string]map[string]any)
     result["gauges"] = make(map[string]any)
-    for k, v := range s.gauges {
-        result["gauges"][k] = v
-    }
     result["counters"] = make(map[string]any)
-    for k, v := range s.counters {
-        result["counters"][k] = v
+    for k, v := range s.metrics {
+        if v.Type == Gauge {
+            result["gauges"][k] = v.Value
+        } else if v.Type == Counter {
+            result["counters"][k] = v.Value
+        }
     }
     return result
 }
