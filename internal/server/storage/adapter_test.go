@@ -1,214 +1,102 @@
-package storage
+package storage_test
 
 import (
-	"reflect"
-	"testing"
-	"time"
+     "testing"
+ 
+ 
+    "github.com/wolf4b12/metrics-sv.git/internal/server/storage"
 )
 
+// kvStorageMock is a mock implementation of the KVStorageInterface
+type kvStorageMock struct {
+    data map[string]any
+}
+
+func (m *kvStorageMock) Set(key string, value any) {
+    m.data[key] = value
+}
+
+func (m *kvStorageMock) Get(key string) (any, bool) {
+    value, exists := m.data[key]
+    return value, exists
+}
+
+func (m *kvStorageMock) Delete(key string) {
+    delete(m.data, key)
+}
+
+func (m *kvStorageMock) All() map[string]any {
+    return m.data
+}
+
 func TestNewMetricStorage(t *testing.T) {
-	type args struct {
-		restore       bool
-		storeInterval time.Duration
-		filePath      string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *MetricStorage
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewMetricStorage(tt.args.restore, tt.args.storeInterval, tt.args.filePath)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewMetricStorage() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewMetricStorage() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+    kv := &kvStorageMock{data: make(map[string]any)}
+    s, err := storage.NewMetricStorage(kv, false, 0, "")
+    if err != nil {
+        t.Errorf("NewMetricStorage() error = %v, wantErr %v", err, false)
+    }
+    if s == nil {
+        t.Errorf("NewMetricStorage() got nil, want non-nil")
+    }
 }
 
 func TestMetricStorage_UpdateGauge(t *testing.T) {
-	type fields struct {
-		kv         *KVStorage
-		gauges     map[string]float64
-		counters   map[string]int64
-		saveTicker *time.Ticker
-		stopCh     chan struct{}
-	}
-	type args struct {
-		name  string
-		value float64
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &MetricStorage{
-				kv:         tt.fields.kv,
-				gauges:     tt.fields.gauges,
-				counters:   tt.fields.counters,
-				saveTicker: tt.fields.saveTicker,
-				stopCh:     tt.fields.stopCh,
-			}
-			s.UpdateGauge(tt.args.name, tt.args.value)
-		})
-	}
+    kv := &kvStorageMock{data: make(map[string]any)}
+    s, _ := storage.NewMetricStorage(kv, false, 0, "")
+    s.UpdateGauge("metric1", 1.23)
+    if value, exists := kv.Get("metric1"); !exists || value != 1.23 {
+        t.Errorf("UpdateGauge() got %v, want %v", value, 1.23)
+    }
 }
 
 func TestMetricStorage_UpdateCounter(t *testing.T) {
-	type fields struct {
-		kv         *KVStorage
-		gauges     map[string]float64
-		counters   map[string]int64
-		saveTicker *time.Ticker
-		stopCh     chan struct{}
-	}
-	type args struct {
-		name  string
-		value int64
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &MetricStorage{
-				kv:         tt.fields.kv,
-				gauges:     tt.fields.gauges,
-				counters:   tt.fields.counters,
-				saveTicker: tt.fields.saveTicker,
-				stopCh:     tt.fields.stopCh,
-			}
-			s.UpdateCounter(tt.args.name, tt.args.value)
-		})
-	}
+    kv := &kvStorageMock{data: make(map[string]any)}
+    s, _ := storage.NewMetricStorage(kv, false, 0, "")
+    s.UpdateCounter("metric1", 1)
+    if value, exists := kv.Get("metric1"); !exists || value != int64(1) {
+        t.Errorf("UpdateCounter() got %v, want %v", value, int64(1))
+    }
 }
 
 func TestMetricStorage_GetGauge(t *testing.T) {
-	type fields struct {
-		kv         *KVStorage
-		gauges     map[string]float64
-		counters   map[string]int64
-		saveTicker *time.Ticker
-		stopCh     chan struct{}
-	}
-	type args struct {
-		name string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    float64
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &MetricStorage{
-				kv:         tt.fields.kv,
-				gauges:     tt.fields.gauges,
-				counters:   tt.fields.counters,
-				saveTicker: tt.fields.saveTicker,
-				stopCh:     tt.fields.stopCh,
-			}
-			got, err := s.GetGauge(tt.args.name)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MetricStorage.GetGauge() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("MetricStorage.GetGauge() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+    kv := &kvStorageMock{data: make(map[string]any)}
+    s, _ := storage.NewMetricStorage(kv, false, 0, "")
+    s.UpdateGauge("metric1", 1.23)
+    value, err := s.GetGauge("metric1")
+    if err != nil {
+        t.Errorf("GetGauge() error = %v, wantErr %v", err, false)
+    }
+    if value != 1.23 {
+        t.Errorf("GetGauge() got %v, want %v", value, 1.23)
+    }
 }
 
 func TestMetricStorage_GetCounter(t *testing.T) {
-	type fields struct {
-		kv         *KVStorage
-		gauges     map[string]float64
-		counters   map[string]int64
-		saveTicker *time.Ticker
-		stopCh     chan struct{}
-	}
-	type args struct {
-		name string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    int64
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &MetricStorage{
-				kv:         tt.fields.kv,
-				gauges:     tt.fields.gauges,
-				counters:   tt.fields.counters,
-				saveTicker: tt.fields.saveTicker,
-				stopCh:     tt.fields.stopCh,
-			}
-			got, err := s.GetCounter(tt.args.name)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MetricStorage.GetCounter() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("MetricStorage.GetCounter() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+    kv := &kvStorageMock{data: make(map[string]any)}
+    s, _ := storage.NewMetricStorage(kv, false, 0, "")
+    s.UpdateCounter("metric1", 1)
+    value, err := s.GetCounter("metric1")
+    if err != nil {
+        t.Errorf("GetCounter() error = %v, wantErr %v", err, false)
+    }
+    if value != int64(1) {
+        t.Errorf("GetCounter() got %v, want %v", value, int64(1))
+    }
 }
 
 func TestMetricStorage_AllMetrics(t *testing.T) {
-	type fields struct {
-		kv         *KVStorage
-		gauges     map[string]float64
-		counters   map[string]int64
-		saveTicker *time.Ticker
-		stopCh     chan struct{}
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   map[string]map[string]any
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &MetricStorage{
-				kv:         tt.fields.kv,
-				gauges:     tt.fields.gauges,
-				counters:   tt.fields.counters,
-				saveTicker: tt.fields.saveTicker,
-				stopCh:     tt.fields.stopCh,
-			}
-			if got := s.AllMetrics(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("MetricStorage.AllMetrics() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+    kv := &kvStorageMock{data: make(map[string]any)}
+    s, _ := storage.NewMetricStorage(kv, false, 0, "")
+    s.UpdateGauge("metric1", 1.23)
+    s.UpdateCounter("metric2", 1)
+    allMetrics := s.AllMetrics()
+    if len(allMetrics) != 2 {
+        t.Errorf("AllMetrics() got %v, want %v", len(allMetrics), 2)
+    }
+    if gaugeValue, exists := allMetrics["gauges"]["metric1"]; !exists || gaugeValue != 1.23 {
+        t.Errorf("AllMetrics() got gauge value %v, want %v", gaugeValue, 1.23)
+    }
+    if counterValue, exists := allMetrics["counters"]["metric2"]; !exists || counterValue != int64(1) {
+        t.Errorf("AllMetrics() got counter value %v, want %v", counterValue, int64(1))
+    }
 }

@@ -29,9 +29,9 @@ type Server struct {
 // Запуск сервера
 func NewServer(addr string, restore bool, storeInterval time.Duration, filePath string, ) *Server {
     // Создание KV-хранилища
-
+    kv := storage.NewKVStorage()
     // Создание адаптера для работы с метриками
-    metricStorage, err :=  storage.NewMetricStorage(restore, storeInterval, filePath) 
+    metricStorage, err :=  storage.NewMetricStorage(kv, restore, storeInterval, filePath) 
 
     if err != nil {
         log.Fatalf("Не удалось создать хранилище метрик: %v", err)

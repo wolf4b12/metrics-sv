@@ -5,13 +5,19 @@ import (
     "sync"
     "log"
     "time"
-
-
 )
+
+// KVStorageInterface интерфейс для работы с KV-хранилищем
+type KVStorageInterface interface {
+    Set(key string, value any)
+    Get(key string) (any, bool)
+    Delete(key string)
+    All() map[string]any
+}
 
 // MetricStorage — адаптер для работы с метриками
 type MetricStorage struct {
-    kv       *KVStorage
+    kv       KVStorageInterface
     gauges   map[string]float64
     counters map[string]int64
     mu       sync.RWMutex
@@ -21,11 +27,9 @@ type MetricStorage struct {
 }
 
 // NewMetricStorage создаёт новый адаптер для работы с метриками
-func NewMetricStorage(restore bool, storeInterval time.Duration, filePath string) (*MetricStorage, error) {
-
-
+func NewMetricStorage(kv KVStorageInterface, restore bool, storeInterval time.Duration, filePath string) (*MetricStorage, error) {
     s := &MetricStorage{
-        kv:       NewKVStorage(),
+        kv:       kv,
         gauges:   make(map[string]float64),
         counters: make(map[string]int64),
         saveTicker: nil,
@@ -40,7 +44,6 @@ func NewMetricStorage(restore bool, storeInterval time.Duration, filePath string
     }
     // Обработка сигналов завершения
 
-
     if restore {
         err := s.LoadFromFile(filePath)
         if err != nil {
@@ -48,13 +51,9 @@ func NewMetricStorage(restore bool, storeInterval time.Duration, filePath string
         } else {
             log.Println("Предыдущие метрики успешно загружены.")
         }
-
     }
 
-
     return s, nil
-
-        
 }
 
 // UpdateGauge обновляет значение gauge-метрики
