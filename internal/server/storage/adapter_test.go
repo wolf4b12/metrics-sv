@@ -1,174 +1,140 @@
 package storage
 
 import (
-	"reflect"
-	"testing"
-	"time"
+    "testing"
+
+    "github.com/golang/mock/gomock"
+    "github.com/wolf4b12/metrics-sv/mocks"
+    "github.com/stretchr/testify/assert" 
 )
 
+
+
 func TestNewMetricStorage(t *testing.T) {
-	type args struct {
-		kv            KVStorageInterface
-		restore       bool
-		storeInterval time.Duration
-		filePath      string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *MetricStorage
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewMetricStorage(tt.args.kv, tt.args.restore, tt.args.storeInterval, tt.args.filePath)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewMetricStorage() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewMetricStorage() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    kv := mocks.NewMockKVStorageInterface(ctrl)
+    kv.EXPECT().Set(gomock.Any(), gomock.Any()).AnyTimes()
+    kv.EXPECT().Get(gomock.Any()).AnyTimes()
+    kv.EXPECT().Delete(gomock.Any()).AnyTimes()
+    kv.EXPECT().All().AnyTimes()
+
+    s, err := NewMetricStorage(kv, false, 0, "")
+    if err != nil {
+        t.Errorf("NewMetricStorage() error = %v, wantErr %v", err, false)
+    }
+    if s == nil {
+        t.Errorf("NewMetricStorage() got nil, want non-nil")
+    }
 }
 
 func TestMetricStorage_UpdateGauge(t *testing.T) {
-	type fields struct {
-		kv         KVStorageInterface
-		metrics    map[string]MetricValue
-		saveTicker *time.Ticker
-		stopCh     chan struct{}
-	}
-	type args struct {
-		name  string
-		value float64
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &MetricStorage{
-				kv:         tt.fields.kv,
-				metrics:    tt.fields.metrics,
-				saveTicker: tt.fields.saveTicker,
-				stopCh:     tt.fields.stopCh,
-			}
-			s.UpdateGauge(tt.args.name, tt.args.value)
-		})
-	}
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    kv := mocks.NewMockKVStorageInterface(ctrl)
+    kv.EXPECT().Set(gomock.Any(), gomock.Any()).AnyTimes()
+
+    s, _ := NewMetricStorage(kv, false, 0, "")
+    s.UpdateGauge("metric1", 1.23)
 }
+
+func TestMetricStorage_UpdateCounter(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    kv := mocks.NewMockKVStorageInterface(ctrl)
+    kv.EXPECT().Set(gomock.Any(), gomock.Any()).AnyTimes()
+
+    s, _ := NewMetricStorage(kv, false, 0, "")
+    s.UpdateCounter("metric1", 1)
+}
+
 
 func TestMetricStorage_GetGauge(t *testing.T) {
-	type fields struct {
-		kv         KVStorageInterface
-		metrics    map[string]MetricValue
-		saveTicker *time.Ticker
-		stopCh     chan struct{}
-	}
-	type args struct {
-		name string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    float64
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &MetricStorage{
-				kv:         tt.fields.kv,
-				metrics:    tt.fields.metrics,
-				saveTicker: tt.fields.saveTicker,
-				stopCh:     tt.fields.stopCh,
-			}
-			got, err := s.GetGauge(tt.args.name)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MetricStorage.GetGauge() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("MetricStorage.GetGauge() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    kv := mocks.NewMockKVStorageInterface(ctrl)
+    
+    // Логируем все вызовы Get
+    kv.EXPECT().Get(gomock.Any()).DoAndReturn(func(key string) (interface{}, bool) {
+        t.Logf("Get called with key: %s", key)
+        return nil, false
+    }).AnyTimes()
+    
+    kv.EXPECT().Set(gomock.Any(), gomock.Any()).AnyTimes()
+
+    ms, _ := NewMetricStorage(kv, false, 0, "")
+
+    ms.UpdateGauge("metric1", 1.23)
+    value, err := ms.GetGauge("metric1")
+    
+    t.Logf("Result: %v, %v", value, err)
+    // ... assertions
 }
+
 
 func TestMetricStorage_GetCounter(t *testing.T) {
-	type fields struct {
-		kv         KVStorageInterface
-		metrics    map[string]MetricValue
-		saveTicker *time.Ticker
-		stopCh     chan struct{}
-	}
-	type args struct {
-		name string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    int64
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &MetricStorage{
-				kv:         tt.fields.kv,
-				metrics:    tt.fields.metrics,
-				saveTicker: tt.fields.saveTicker,
-				stopCh:     tt.fields.stopCh,
-			}
-			got, err := s.GetCounter(tt.args.name)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("MetricStorage.GetCounter() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("MetricStorage.GetCounter() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    kv := mocks.NewMockKVStorageInterface(ctrl)
+    
+    // Логируем все вызовы Get для диагностики
+    kv.EXPECT().Get(gomock.Any()).DoAndReturn(func(key string) (interface{}, bool) {
+        t.Logf("Get called with key: %s", key)
+        if key == "counter1" {
+            return MetricValue{Type: Counter, Value: int64(42)}, true
+        }
+        return nil, false
+    }).AnyTimes()
+    
+    kv.EXPECT().Set(gomock.Any(), gomock.Any()).AnyTimes()
+
+    ms, _ := NewMetricStorage(kv, false, 0, "")
+
+    ms.UpdateGauge("metric1", 1.23)
+    value, err := ms.GetCounter("metric1")
+    
+    t.Logf("Result: %v, %v", value, err)
+    // ... assertions
 }
 
+
+
+
+
+
+
 func TestMetricStorage_AllMetrics(t *testing.T) {
-	type fields struct {
-		kv         KVStorageInterface
-		metrics    map[string]MetricValue
-		saveTicker *time.Ticker
-		stopCh     chan struct{}
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   map[string]map[string]any
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &MetricStorage{
-				kv:         tt.fields.kv,
-				metrics:    tt.fields.metrics,
-				saveTicker: tt.fields.saveTicker,
-				stopCh:     tt.fields.stopCh,
-			}
-			if got := s.AllMetrics(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("MetricStorage.AllMetrics() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    kv := mocks.NewMockKVStorageInterface(ctrl)
+
+    // Ожидание вызова Set()
+    kv.EXPECT().Set(gomock.Any(), gomock.Any()).AnyTimes()
+
+    ms, _ := NewMetricStorage(kv, false, 0, "")
+
+    // Добавляем метрику
+    ms.UpdateGauge("metric1", 1.23)
+
+    // Получаем все метрики
+    allMetrics := ms.AllMetrics()
+
+    // Проверяем, что результат содержит обе группы
+    assert.Len(t, allMetrics, 2)
+
+    // Проверяем группу gauges
+    gauges, exists := allMetrics["gauges"]
+    assert.True(t, exists)
+    assert.Equal(t, 1.23, gauges["metric1"])
+
+    // Проверяем группу counters
+    counters, exists := allMetrics["counters"]
+    assert.True(t, exists)
+    assert.Empty(t, counters)
 }

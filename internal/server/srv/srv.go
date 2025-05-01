@@ -10,11 +10,11 @@ import (
     
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
-    "github.com/wolf4b12/metrics-sv.git/internal/server/handlers"
-    "github.com/wolf4b12/metrics-sv.git/internal/server/storage"
-    lgr "github.com/wolf4b12/metrics-sv.git/internal/server/middlewares/logger" // Импортируем пакет логирования 
+    "github.com/wolf4b12/metrics-sv/internal/server/handlers"
+    "github.com/wolf4b12/metrics-sv/internal/server/storage"
+    lgr "github.com/wolf4b12/metrics-sv/internal/server/middlewares/logger" // Импортируем пакет логирования 
     "go.uber.org/zap"
-    cm  "github.com/wolf4b12/metrics-sv.git/internal/server/compress"
+    cm  "github.com/wolf4b12/metrics-sv/internal/server/compress"
 
 )
 

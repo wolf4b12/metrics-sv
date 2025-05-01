@@ -6,8 +6,8 @@ import (
     "strconv"
     "io"
     "encoding/json"
-    "github.com/wolf4b12/metrics-sv.git/internal/constant" // Импортируем константы
-    "github.com/wolf4b12/metrics-sv.git/internal/server/metricssrv" //Импортируем серуктуру с метриками
+    "github.com/wolf4b12/metrics-sv/internal/constant" // Импортируем константы
+    "github.com/wolf4b12/metrics-sv/internal/server/metricssrv" //Импортируем серуктуру с метриками
 )
 
 // UpdateStorage интерфейс для обновления метрик

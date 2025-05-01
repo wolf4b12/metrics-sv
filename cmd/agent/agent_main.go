@@ -3,8 +3,8 @@ package main
 import (
     "math/rand"
     "time"
-    "github.com/wolf4b12/metrics-sv.git/internal/agent/agentmethods" // Импортируем пакет agentmethods
-    "github.com/wolf4b12/metrics-sv.git/internal/agent/parseflags" // Импортируем пакет parseflags
+    "github.com/wolf4b12/metrics-sv/internal/agent/agentmethods" // Импортируем пакет agentmethods
+    "github.com/wolf4b12/metrics-sv/internal/agent/parseflags" // Импортируем пакет parseflags
 )
 
 

@@ -3,8 +3,8 @@ package main
 import (
     "log"
 
-    srv "github.com/wolf4b12/metrics-sv.git/internal/server/srv"
-    config "github.com/wolf4b12/metrics-sv.git/internal/server/config"
+    srv "github.com/wolf4b12/metrics-sv/internal/server/srv"
+    config "github.com/wolf4b12/metrics-sv/internal/server/config"
 )
 
 func main() {
