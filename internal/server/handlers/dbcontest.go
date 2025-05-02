@@ -5,7 +5,7 @@ import (
 //    _ "github.com/jackc/pgx/v4/stdlib" // Подключение драйвера pgx
     "log"
     "net/http"
-    "fmt"
+ //   "fmt"
 )
 
 // PingHandler обработчик для проверки соединения с базой данных
@@ -13,10 +13,10 @@ func PingHandler(s string) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         
         // Формирование строки подключения
-        ps := fmt.Sprintf("host=%s user=test password=XXXXXXXX dbname=test sslmode=disable", s)
+
     
         // Открытие подключения к базе данных
-        db, err := sql.Open("pgx", ps)
+        db, err := sql.Open("pgx", s)
         defer db.Close() // Закрываем подключение после завершения обработки запроса
 
         if err != nil {
