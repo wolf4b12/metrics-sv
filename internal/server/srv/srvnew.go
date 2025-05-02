@@ -2,6 +2,7 @@ package srv
 
 import (
     "database/sql"
+    _ "github.com/jackc/pgx/v5/stdlib"
     "fmt"
     "log"
     "net/http"
@@ -37,7 +38,7 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
         log.Fatalf("Не удалось создать хранилище метрик: %v", err)
     }
     // Создание подключения к базе данных
-    db, err := sql.Open("postgres", dbDSN)
+    db, _ := sql.Open("postgres", dbDSN)
     if err != nil {
         return nil, fmt.Errorf("не удалось подключиться к базе данных: %w", err)
     }
