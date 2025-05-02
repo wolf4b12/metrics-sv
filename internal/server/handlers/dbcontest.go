@@ -10,21 +10,17 @@ import (
 func PingHandler(s string) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
 
-           // Создание подключения к базе данных
+    // Создание подключения к базе данных
    
 
     ps := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
     s, `test`, `XXXXXXXX`, `test`)
  
-	db, err := sql.Open("pgx", ps)
-    if err != nil {
-    panic(err)
-   }
+	_, err := sql.Open("pgx", ps)
+	w.WriteHeader(http.StatusOK)
 
-    if err := db.Ping(); err != nil {
-            http.Error(w, "Не удалось проверить соединение с базой данных", http.StatusInternalServerError)
-            return
-        }
-        w.WriteHeader(http.StatusOK)
-    }
+    if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+    }  
+	}
 }
