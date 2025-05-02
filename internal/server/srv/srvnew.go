@@ -3,7 +3,7 @@ package srv
 import (
     "database/sql"
     _ "github.com/jackc/pgx/v5/stdlib"
-    "fmt"
+//    "fmt"
     "log"
     "net/http"
     "time"
@@ -28,7 +28,7 @@ type Server struct {
 }
 
 // Запуск сервера
-func NewServer(addr string, restore bool, storeInterval time.Duration, filePath string, dbDSN string) (*Server, error) {
+func NewServer(addr string, restore bool, storeInterval time.Duration, filePath string, dbDSN string) (*Server) {
     // Создание KV-хранилища
     kv := storage.NewKVStorage()
     // Создание адаптера для работы с метриками
@@ -39,13 +39,13 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     }
     // Создание подключения к базе данных
     db, _ := sql.Open("postgres", dbDSN)
-    if err != nil {
-        return nil, fmt.Errorf("не удалось подключиться к базе данных: %w", err)
-    }
+//    if err != nil {
+//        fmt.Printf("не удалось подключиться к базе данных")
+//    }
     // Проверка соединения с базой данных
-    if err := db.Ping(); err != nil {
-        return nil, fmt.Errorf("не удалось проверить соединение с базой данных: %w", err)
-    }
+//    if err := db.Ping(); err != nil {
+//        fmt.Printf("не удалось проверить соединение с базой данных")
+//    }
     router := chi.NewRouter()
 
     // Инициализируем логгер Zap
@@ -81,6 +81,6 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
         storage: metricStorage,
         db:      db,
     }
-    return srv, nil
+    return srv
 }
 

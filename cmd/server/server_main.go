@@ -14,7 +14,7 @@ func main() {
     }
 
     // Обращаемся непосредственно к полю конфигурации
-    server, err  := srv.NewServer(
+    server := srv.NewServer(
         cfg.GetAddr(),                   // Адрес прослушивания
         cfg.IsRestoreEnabled(),          // Нужна ли загрузка предыдущих метрик
         cfg.GetStoreInterval(),          // Интервал сохранения метрик
