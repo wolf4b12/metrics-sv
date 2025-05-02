@@ -1,13 +1,12 @@
 package srv
 
 import (
+    "database/sql"
     "fmt"
     "log"
     "net/http"
     "time"
     "sync"
-
-    
     "github.com/go-chi/chi/v5"
     "github.com/go-chi/chi/v5/middleware"
     "github.com/wolf4b12/metrics-sv/internal/server/handlers"
@@ -23,11 +22,12 @@ type Server struct {
     server   *http.Server
     storage  *storage.MetricStorage
     ticker   *time.Ticker
+    db       *sql.DB
     wg       sync.WaitGroup
 }
 
 // Запуск сервера
-func NewServer(addr string, restore bool, storeInterval time.Duration, filePath string, ) *Server {
+func NewServer(addr string, restore bool, storeInterval time.Duration, filePath string, dbDSN string) (*Server, error) {
     // Создание KV-хранилища
     kv := storage.NewKVStorage()
     // Создание адаптера для работы с метриками
@@ -36,11 +36,15 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     if err != nil {
         log.Fatalf("Не удалось создать хранилище метрик: %v", err)
     }
-
-    // Загрузка данных из файла при старте, если указано 
-
-
-
+    // Создание подключения к базе данных
+    db, err := sql.Open("postgres", dbDSN)
+    if err != nil {
+        return nil, fmt.Errorf("не удалось подключиться к базе данных: %w", err)
+    }
+    // Проверка соединения с базой данных
+    if err := db.Ping(); err != nil {
+        return nil, fmt.Errorf("не удалось проверить соединение с базой данных: %w", err)
+    }
     router := chi.NewRouter()
 
     // Инициализируем логгер Zap
@@ -48,7 +52,6 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     if err != nil {
         log.Fatalf("Не удалось инициализировать логгер: %v", err)
     }
-
     // Применяем middleware для логирования
     router.Use(lgr.LoggingMiddleware(logger)) // Используем middleware из пакета logger
     router.Use(middleware.Logger)
@@ -65,7 +68,7 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     router.Get("/value/{metricType}/{metricName}", handlers.ValueHandler(metricStorage))
     router.Post("/value/", handlers.PostJSONValueHandler(metricStorage))
     router.Get("/", handlers.ListMetricsHandler(metricStorage))
-
+    router.Get("/ping", handlers.PingHandler(db))
 
     // Создание сервера
     srv := &Server{
@@ -75,17 +78,8 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
             Handler: router,
         },
         storage: metricStorage,
+        db:      db,
     }
-
-
-    return srv
+    return srv, nil
 }
 
-
-func (s *Server) Run() error {
-    log.Printf("Запуск сервера на http://%s\n", s.server.Addr)
-    if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-        return fmt.Errorf("не удалось запустить сервер: %w", err)
-    }
-    return nil
-}

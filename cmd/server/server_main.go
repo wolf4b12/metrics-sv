@@ -14,11 +14,12 @@ func main() {
     }
 
     // Обращаемся непосредственно к полю конфигурации
-    server  := srv.NewServer(
+    server, err  := srv.NewServer(
         cfg.GetAddr(),                   // Адрес прослушивания
         cfg.IsRestoreEnabled(),          // Нужна ли загрузка предыдущих метрик
         cfg.GetStoreInterval(),          // Интервал сохранения метрик
         cfg.GetFileStoragePath(),        // путь до файла с метриками
+        cfg.GetDataBase(),        // путь к бд
     )
     if err != nil {
         log.Fatalf("ошибка при создании сервера: %v", err)

@@ -4,7 +4,7 @@ import (
     "testing"
 
     "github.com/golang/mock/gomock"
-    "github.com/wolf4b12/metrics-sv/mocks"
+    "github.com/wolf4b12/metrics-sv/internal/server/storage/mocks"
     "github.com/stretchr/testify/assert" 
 )
 

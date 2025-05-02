@@ -15,6 +15,7 @@ type Config struct {
     StoreIntervalSec  int           `env:"STORE_INTERVAL" envDefault:"300"`                      // Интервал автосохранения в секундах
     RestoreOnStartup  bool          `env:"RESTORE" envDefault:"false"`                         // Восстанавливать метрики при старте
     FileStoragePath   string        `env:"FILE_STORAGE_PATH" envDefault:"/tmp/metrics.json"`   // Путь к файлу хранения метрик
+    DataBase          string        `env:"DATABASE_DSN" envDefault:"localhost:5432"`   // Путь к файлу хранения метрик
 }
 
 // Метод для получения адреса
@@ -37,6 +38,11 @@ func (c *Config) IsRestoreEnabled() bool {
     return c.RestoreOnStartup
 }
 
+// Метод для проверки параметра restore-on-startup
+func (c *Config) GetDataBase() string {
+    return c.DataBase
+}
+
 // Создаем новый экземпляр конфигурации
 func NewConfig() (*Config, error) {
     cfg := &Config{}
@@ -52,6 +58,7 @@ func NewConfig() (*Config, error) {
         "i": cfg.StoreIntervalSec,
         "f": cfg.FileStoragePath,
         "r": cfg.RestoreOnStartup,
+        "d": cfg.DataBase,
     }
 
     // Формируем набор флагов командной строки
@@ -60,7 +67,7 @@ func NewConfig() (*Config, error) {
     flagSet.IntVar(&cfg.StoreIntervalSec, "i", cfg.StoreIntervalSec, "Интервал автосохранения в секундах")
     flagSet.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "Путь к файлу хранения метрик")
     flagSet.BoolVar(&cfg.RestoreOnStartup, "r", cfg.RestoreOnStartup, "Включение восстановления метрик при старте")
-
+    flagSet.StringVar(&cfg.DataBase, "d", cfg.DataBase, "Адрес Базы Данных")
     err := flagSet.Parse(os.Args[1:])
     if err != nil {
         return nil, err
@@ -73,6 +80,7 @@ func NewConfig() (*Config, error) {
     checkSourceInt(flagSet, defaultValues["i"].(int), "i", "STORE_INTERVAL", cfg.StoreIntervalSec)
     checkSourceString(flagSet, defaultValues["f"].(string), "f", "FILE_STORAGE_PATH", cfg.FileStoragePath)
     checkSourceBool(flagSet, defaultValues["r"].(bool), "r", "RESTORE", cfg.RestoreOnStartup)
+    checkSourceString(flagSet, defaultValues["d"].(string), "d", "DATABASE_DSN", cfg.DataBase)
 
     return cfg, nil
 }
