@@ -3,7 +3,7 @@ package srv
 import (
     "database/sql"
     _ "github.com/jackc/pgx/v5/stdlib"
-//    "fmt"
+    "fmt"
     "log"
     "net/http"
     "time"
@@ -28,7 +28,7 @@ type Server struct {
 }
 
 // Запуск сервера
-func NewServer(addr string, restore bool, storeInterval time.Duration, filePath string, dbDSN string) (*Server) {
+func NewServer(addr string, restore bool, storeInterval time.Duration, filePath string, dbDSN string) *Server {
     // Создание KV-хранилища
     kv := storage.NewKVStorage()
     // Создание адаптера для работы с метриками
@@ -38,7 +38,14 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
         log.Fatalf("Не удалось создать хранилище метрик: %v", err)
     }
     // Создание подключения к базе данных
-    db, _ := sql.Open("postgres", dbDSN)
+    ps := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
+    dbDSN, `test`, `XXXXXXXX`, `test`)
+    db, err :=
+    sql.Open("pgx", ps)
+
+    if err != nil {
+    panic(err)
+   }
 //    if err != nil {
 //        fmt.Printf("не удалось подключиться к базе данных")
 //    }
