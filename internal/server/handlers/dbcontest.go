@@ -3,7 +3,7 @@ package handlers
 import (
     "database/sql"
     "net/http"
-	"fmt"
+//	"fmt"
 )
 
 // PingHandler обработчик для проверки соединения с базой данных
@@ -12,10 +12,8 @@ func PingHandler(s string) http.HandlerFunc {
 
     // Создание подключения к базе данных
    
-
-    ps := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
-    s, `test`, `XXXXXXXX`, `test`)
- 	_, err := sql.Open("pgx", ps)
+   
+ 	_, err := sql.Open("pgx", s)
 	
     if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
