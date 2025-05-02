@@ -15,7 +15,7 @@ type Config struct {
     StoreIntervalSec  int           `env:"STORE_INTERVAL" envDefault:"300"`                      // Интервал автосохранения в секундах
     RestoreOnStartup  bool          `env:"RESTORE" envDefault:"false"`                         // Восстанавливать метрики при старте
     FileStoragePath   string        `env:"FILE_STORAGE_PATH" envDefault:"/tmp/metrics.json"`   // Путь к файлу хранения метрик
-    DataBase          string        `env:"DATABASE_DSN" envDefault:"localhost:5432"`   // Путь к файлу хранения метрик
+    DataBase          string        `env:"DATABASE_DSN"`   // Путь к файлу хранения метрик
 }
 
 // Метод для получения адреса

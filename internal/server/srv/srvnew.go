@@ -1,9 +1,9 @@
 package srv
 
 import (
-    "database/sql"
+//    "database/sql"
     _ "github.com/jackc/pgx/v5/stdlib"
-    "fmt"
+//    "fmt"
     "log"
     "net/http"
     "time"
@@ -23,7 +23,7 @@ type Server struct {
     server   *http.Server
     storage  *storage.MetricStorage
     ticker   *time.Ticker
-    db       *sql.DB
+    db       string
     wg       sync.WaitGroup
 }
 
@@ -37,15 +37,7 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     if err != nil {
         log.Fatalf("Не удалось создать хранилище метрик: %v", err)
     }
-    // Создание подключения к базе данных
-    ps := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
-    dbDSN, `test`, `XXXXXXXX`, `test`)
-    db, err :=
-    sql.Open("pgx", ps)
 
-    if err != nil {
-    panic(err)
-   }
 //    if err != nil {
 //        fmt.Printf("не удалось подключиться к базе данных")
 //    }
@@ -76,7 +68,7 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     router.Get("/value/{metricType}/{metricName}", handlers.ValueHandler(metricStorage))
     router.Post("/value/", handlers.PostJSONValueHandler(metricStorage))
     router.Get("/", handlers.ListMetricsHandler(metricStorage))
-    router.Get("/ping", handlers.PingHandler(db))
+    router.Get("/ping", handlers.PingHandler(dbDSN))
 
     // Создание сервера
     srv := &Server{
@@ -86,7 +78,7 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
             Handler: router,
         },
         storage: metricStorage,
-        db:      db,
+        db:      dbDSN,
     }
     return srv
 }
