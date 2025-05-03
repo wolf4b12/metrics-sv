@@ -4,7 +4,7 @@ import (
     "runtime"
     "time"
 
-    metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metricsagent"
+    metrics "github.com/wolf4b12/metrics-sv/internal/agent/metricsagent"
 )
 
 // Агент собирает метрики с определенной частотой
