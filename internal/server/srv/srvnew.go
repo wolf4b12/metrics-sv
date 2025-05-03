@@ -68,7 +68,7 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
     router.Get("/value/{metricType}/{metricName}", handlers.ValueHandler(metricStorage))
     router.Post("/value/", handlers.PostJSONValueHandler(metricStorage))
     router.Get("/", handlers.ListMetricsHandler(metricStorage))
-    router.Get("/ping", handlers.PingHandler(dbDSN))
+    router.Get("/ping", handlers.PingDataBase(dbDSN))
 
     // Создание сервера
     srv := &Server{

@@ -2,25 +2,21 @@ package handlers
 
 import (
     "database/sql"
-//    _ "github.com/jackc/pgx/v4/stdlib" // Подключение драйвера pgx
     "log"
     "net/http"
- //   "fmt"
 )
 
 // PingHandler обработчик для проверки соединения с базой данных
-func PingHandler(s string) http.HandlerFunc {
+func PingDataBase(s string) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
         
-        // Формирование строки подключения
-
     
         // Открытие подключения к базе данных
         db, err := sql.Open("pgx", s)
-        defer db.Close() // Закрываем подключение после завершения обработки запроса
 
         if err != nil {
             log.Printf("Ошибка открытия соединения: %v\n", err)
+            // Если соединения не установлено возвращаем статус 500 OK
             w.WriteHeader(http.StatusInternalServerError)
             return
         }
