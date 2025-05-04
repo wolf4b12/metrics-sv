@@ -29,14 +29,31 @@ type Server struct {
 
 // Запуск сервера
 func NewServer(addr string, restore bool, storeInterval time.Duration, filePath string, dbDSN string) *Server {
-    // Создание KV-хранилища
-    kv := storage.NewKVStorage()
-    // Создание адаптера для работы с метриками
-    metricStorage, err :=  storage.NewMetricStorage(kv, restore, storeInterval, filePath) 
 
+
+    var kv storage.KVStorageInterface
+    
+    var err error
+
+    // Выбор хранилища в зависимости от наличия dbDSN
+    if dbDSN != "" {
+        // Используем базу данных PostgreSQL
+        adapter, err := storage.NewPGStore(dbDSN)
+        if err != nil {
+            log.Fatalf("Ошибка при создании адаптера для PostgreSQL: %v", err)
+        }
+        kv = adapter
+    } else {
+        // Используем простое хранилище в памяти
+        kv = storage.NewKVStorage()
+    }
+
+    metricStorage, err := storage.NewMetricStorage(kv, restore, storeInterval, filePath)
     if err != nil {
         log.Fatalf("Не удалось создать хранилище метрик: %v", err)
     }
+
+
 
 //    if err != nil {
 //        fmt.Printf("не удалось подключиться к базе данных")
