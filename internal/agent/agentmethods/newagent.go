@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
-    metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metricsagent"
+    metrics "github.com/wolf4b12/metrics-sv/internal/agent/metricsagent"
 )
 
 
