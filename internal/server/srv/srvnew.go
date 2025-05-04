@@ -12,6 +12,7 @@ import (
     "github.com/go-chi/chi/v5/middleware"
     "github.com/wolf4b12/metrics-sv/internal/server/handlers"
     "github.com/wolf4b12/metrics-sv/internal/server/storage"
+    "github.com/wolf4b12/metrics-sv/internal/server/storage/pg"
     lgr "github.com/wolf4b12/metrics-sv/internal/server/middlewares/logger" // Импортируем пакет логирования 
     "go.uber.org/zap"
     cm  "github.com/wolf4b12/metrics-sv/internal/server/compress"
@@ -32,13 +33,13 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
 
 
     var kv storage.KVStorageInterface
-    
+
     var err error
 
     // Выбор хранилища в зависимости от наличия dbDSN
     if dbDSN != "" {
         // Используем базу данных PostgreSQL
-        adapter, err := storage.NewPGStore(dbDSN)
+        adapter, err := pg.NewPGStorage(dbDSN)
         if err != nil {
             log.Fatalf("Ошибка при создании адаптера для PostgreSQL: %v", err)
         }
@@ -55,13 +56,6 @@ func NewServer(addr string, restore bool, storeInterval time.Duration, filePath 
 
 
 
-//    if err != nil {
-//        fmt.Printf("не удалось подключиться к базе данных")
-//    }
-    // Проверка соединения с базой данных
-//    if err := db.Ping(); err != nil {
-//        fmt.Printf("не удалось проверить соединение с базой данных")
-//    }
     router := chi.NewRouter()
 
     // Инициализируем логгер Zap

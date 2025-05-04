@@ -1,4 +1,4 @@
-package storage
+package pg
 
 import (
     "database/sql"
@@ -6,18 +6,20 @@ import (
     "log"
     "strings"
     "sync"
+    "github.com/wolf4b12/metrics-sv/internal/server/storage"
 
     _ "github.com/lib/pq" // Импорт драйвера для PostgreSQL
+    
 )
 
-// PGStore — strore для работы с PostgreSQL
+// NewPGStorage — strore для работы с PostgreSQL
 type PGStore struct {
     db     *sql.DB
     mu     sync.Mutex
 }
 
-// NewPGStore создает новый store для работы с PostgreSQL
-func NewPGStore(connStr string) (*PGStore, error) {
+// NewPGStorage создает новый store для работы с PostgreSQL
+func NewPGStorage(connStr string) (*PGStore, error) {
     db, err := sql.Open("postgres", connStr)
     if err != nil {
         return nil, err
@@ -82,14 +84,14 @@ func (pga *PGStore) Set(key string, value any) {
     defer tx.Rollback()
 
     switch val := value.(type) {
-    case MetricValue:
+    case storage.MetricValue:
         switch val.Type {
-        case Gauge:
+        case storage.Gauge:
             _, err = tx.Exec(`
                 INSERT INTO gauges (name, value) VALUES($1, $2)
                 ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;
             `, key, val.Value)
-        case Counter:
+        case storage.Counter:
             _, err = tx.Exec(`
                 INSERT INTO counters (name, value) VALUES($1, $2)
                 ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;
@@ -133,7 +135,7 @@ func (pga *PGStore) Get(key string) (any, bool) {
         return nil, false
     }
 
-    return MetricValue{Type: MetricType(res.Name), Value: res.Value}, true
+    return storage.MetricValue{Type: storage.MetricType(res.Name), Value: res.Value}, true
 }
 
 // Delete удаляет значение по ключу
@@ -185,7 +187,12 @@ func (pga *PGStore) All() map[string]any {
             log.Printf("Ошибка при обработке результата: %v\n", err)
             continue
         }
-        results[name] = MetricValue{Type: Gauge, Value: value}
+        results[name] = storage.MetricValue{Type: storage.Gauge, Value: value}
+    }
+
+    // Обязательно проверяем наличие ошибок после цикла Next()
+    if err := rows.Err(); err != nil {
+        log.Printf("Ошибка при обработке gauge-метрик: %v\n", err)
     }
 
     rows, err = pga.db.Query(cQuery)
@@ -203,7 +210,12 @@ func (pga *PGStore) All() map[string]any {
             log.Printf("Ошибка при обработке результата: %v\n", err)
             continue
         }
-        results[name] = MetricValue{Type: Counter, Value: value}
+        results[name] = storage.MetricValue{Type: storage.Counter, Value: value}
+    }
+
+    // Опять проверяем наличие ошибок после цикла Next()
+    if err := rows.Err(); err != nil {
+        log.Printf("Ошибка при обработке counter-метрик: %v\n", err)
     }
 
     return results
