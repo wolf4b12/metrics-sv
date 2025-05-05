@@ -19,7 +19,7 @@ func main() {
     defer cancel()
 
     agent.StartCollectingMetrics(ctx)
-    agent.SendJSONCollectedMetrics(ctx)
+    agent.SendJSONCollectedMetrics()
     agent.SendTextCollectedMetrics(ctx)
     agent.CollectAndSendBatches(ctx)
 

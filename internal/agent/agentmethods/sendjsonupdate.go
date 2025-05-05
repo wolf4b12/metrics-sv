@@ -1,7 +1,6 @@
 package agentmethods
 
 import (
-    "context"
     "encoding/json"
     "fmt"
     "log"
@@ -11,7 +10,7 @@ import (
 )
 
 // sendSingleMetric отправляет одну метрику в формате JSON
-func (a *Agent) sendSingleMetric(ctx context.Context, metric interface{}, metricID string, checkRequired func() bool) {
+func (a *Agent) sendSingleMetric(metric interface{}, metricID string, checkRequired func() bool) {
     if !checkRequired() {
         log.Printf("Отсутствует обязательный параметр для метрики '%s'\n", metricID)
         return
@@ -35,7 +34,7 @@ func (a *Agent) sendSingleMetric(ctx context.Context, metric interface{}, metric
     }
 
     // Формируем запрос с Gzip-данными
-    req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(compressedData))
+    req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(compressedData))
     if err != nil {
         a.HandleErrorAndContinue("формирования запроса", err)
         return
@@ -58,36 +57,29 @@ func (a *Agent) sendSingleMetric(ctx context.Context, metric interface{}, metric
 }
 
 // SendJSONCollectedMetrics отправляет собранные метрики в формате JSON
-func (a *Agent) SendJSONCollectedMetrics(ctx context.Context) {
+func (a *Agent) SendJSONCollectedMetrics() {
     for {
-        select {
-        case <-ctx.Done():
-            return
-        default:
-            a.mu.Lock()
+        a.mu.Lock()
 
-            for _, gauge := range a.Gauges {
-                a.sendSingleMetric(
-                    ctx,
-                    gauge,
-                    gauge.ID,
-                    func() bool { return gauge.Value != nil },
-                )
-            }
-
-            for _, counter := range a.Counters {
-                a.sendSingleMetric(
-                    ctx,
-                    counter,
-                    counter.ID,
-                    func() bool { return counter.Delta != nil },
-                )
-            }
-
-            a.mu.Unlock()
-
-            // Ждем указанный интервал
-            time.Sleep(a.reportInterval)
+        for _, gauge := range a.Gauges {
+            a.sendSingleMetric(
+                gauge,
+                gauge.ID,
+                func() bool { return gauge.Value != nil },
+            )
         }
+
+        for _, counter := range a.Counters {
+            a.sendSingleMetric(
+                counter,
+                counter.ID,
+                func() bool { return counter.Delta != nil },
+            )
+        }
+
+        a.mu.Unlock()
+
+        // Ждем указанный интервал
+        time.Sleep(a.reportInterval)
     }
 }
