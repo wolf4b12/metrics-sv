@@ -18,10 +18,10 @@ func main() {
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
 
-    go agent.StartCollectingMetrics(ctx)
-    go agent.SendJSONCollectedMetrics()
-    go agent.SendTextCollectedMetrics(ctx)
-    go agent.CollectAndSendBatches(ctx)
+    agent.StartCollectingMetrics(ctx)
+    agent.SendJSONCollectedMetrics(ctx)
+    agent.SendTextCollectedMetrics(ctx)
+    agent.CollectAndSendBatches(ctx)
 
     select {} // Keep main goroutine alive
 }
