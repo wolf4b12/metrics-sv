@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
-    metrics "github.com/wolf4b12/metrics-sv.git/internal/agent/metricsagent"
+    metrics "github.com/wolf4b12/metrics-sv/internal/agent/metricsagent"
 )
 
 
@@ -27,10 +27,10 @@ func NewAgent(poll, report time.Duration, addr string) *Agent {
     return &Agent{
         Gauges:         make([]metrics.Metrics, 0),
         Counters:       make([]metrics.Metrics, 0),
+        mu:             &sync.Mutex{},
         pollInterval:   poll,
         reportInterval: report,
         addr:           addr,
-        mu:             &sync.Mutex{},
         client:         &http.Client{Timeout: 5 * time.Second},
     }
 }

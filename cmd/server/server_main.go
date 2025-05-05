@@ -3,8 +3,8 @@ package main
 import (
     "log"
 
-    srv "github.com/wolf4b12/metrics-sv.git/internal/server/srv"
-    config "github.com/wolf4b12/metrics-sv.git/internal/server/config"
+    srv "github.com/wolf4b12/metrics-sv/internal/server/srv"
+    config "github.com/wolf4b12/metrics-sv/internal/server/config"
 )
 
 func main() {
@@ -14,11 +14,12 @@ func main() {
     }
 
     // Обращаемся непосредственно к полю конфигурации
-    server  := srv.NewServer(
+    server := srv.NewServer(
         cfg.GetAddr(),                   // Адрес прослушивания
         cfg.IsRestoreEnabled(),          // Нужна ли загрузка предыдущих метрик
         cfg.GetStoreInterval(),          // Интервал сохранения метрик
         cfg.GetFileStoragePath(),        // путь до файла с метриками
+        cfg.GetDataBase(),        // путь к бд
     )
     if err != nil {
         log.Fatalf("ошибка при создании сервера: %v", err)

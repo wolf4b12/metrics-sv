@@ -6,8 +6,8 @@ import (
     "io"
     "fmt"
     "github.com/go-chi/chi/v5"
-    "github.com/wolf4b12/metrics-sv.git/internal/constant"     // Импортируем константы
-    "github.com/wolf4b12/metrics-sv.git/internal/server/metricssrv" // Импортируем структуру метрик
+    "github.com/wolf4b12/metrics-sv/internal/constant"     // Импортируем константы
+    "github.com/wolf4b12/metrics-sv/internal/server/metricssrv" // Импортируем структуру метрик
 )
 
 // GetStorage интерфейс для получения метрик

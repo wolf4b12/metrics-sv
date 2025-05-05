@@ -23,6 +23,7 @@ type Metric interface {
 }
 
 
+
 // Метод интерфейса для идентификации метрики
 func (m *Metrics) GetID() string { return m.ID }
 
