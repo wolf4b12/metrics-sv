@@ -3,30 +3,49 @@ package main
 import (
     "math/rand"
     "time"
+    "sync"
     "github.com/wolf4b12/metrics-sv/internal/agent/agentmethods" // Импортируем пакет agentmethods
     "github.com/wolf4b12/metrics-sv/internal/agent/parseflags" // Импортируем пакет parseflags
 )
 
-
 func main() {
-
-    rand.New(rand.NewSource(time.Now().UnixNano())) // Create new source for random numbers
+    rand.New(rand.NewSource(time.Now().UnixNano())) // Создаем источник случайных чисел
 
     poll, report, addr := parseflags.ParseFlags()
-    
+
     agent := agentmethods.NewAgent(poll, report, addr)
 
-go   agent.StartCollectingMetrics()
+    // Глобальный mutex для защиты общей структуры
+    var globalMu sync.Mutex
 
-go  agent.SendJSONCollectedMetrics()
+    // Функции-колбеки для безопасной работы с общим состоянием
+    collectMetrics := func() {
+        globalMu.Lock()
+        defer globalMu.Unlock()
+        agent.StartCollectingMetrics()
+    }
+    sendJSONMetrics := func() {
+        globalMu.Lock()
+        defer globalMu.Unlock()
+        agent.SendJSONCollectedMetrics()
+    }
+    sendTextMetrics := func() {
+        globalMu.Lock()
+        defer globalMu.Unlock()
+        agent.SendTextCollectedMetrics()
+    }
+    sendBatches := func() {
+        globalMu.Lock()
+        defer globalMu.Unlock()
+        agent.CollectAndSendBatches()
+    }
 
-go   agent.SendTextCollectedMetrics()
+    // Горутины с безопасным доступом к общему ресурсу
+    go collectMetrics()
+    go sendJSONMetrics()
+    go sendTextMetrics()
+    go sendBatches()
 
-go   agent.CollectAndSendBatches()
-    
-
-
-
-
-    select {} // Keep main goroutine alive  
+    // Основной поток ждет бесконечно
+    select {}
 }
