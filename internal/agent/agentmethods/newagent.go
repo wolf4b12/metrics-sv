@@ -27,10 +27,10 @@ func NewAgent(poll, report time.Duration, addr string) *Agent {
     return &Agent{
         Gauges:         make([]metrics.Metrics, 0),
         Counters:       make([]metrics.Metrics, 0),
+        mu:             &sync.Mutex{},
         pollInterval:   poll,
         reportInterval: report,
         addr:           addr,
-        mu:             &sync.Mutex{},
         client:         &http.Client{Timeout: 5 * time.Second},
     }
 }

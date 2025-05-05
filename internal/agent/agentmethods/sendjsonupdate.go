@@ -19,7 +19,7 @@ func (a *Agent) sendSingleMetric(metric interface{}, metricID string, checkRequi
     // Маршализируем метрику в JSON
     data, err := json.Marshal(metric)
     if err != nil {
-        a.handleErrorAndContinue("маршализации метрики в JSON", err)
+        a.HandleErrorAndContinue("маршализации метрики в JSON", err)
         return
     }
 
@@ -27,16 +27,16 @@ func (a *Agent) sendSingleMetric(metric interface{}, metricID string, checkRequi
     url := fmt.Sprintf("http://%s/update/", a.addr)
 
     // Сжимаем данные
-    compressedData, err := a.compressPayload(data)
+    compressedData, err := a.CompressPayload(data)
     if err != nil {
-        a.handleErrorAndContinue("сжатия метрики", err)
+        a.HandleErrorAndContinue("сжатия метрики", err)
         return
     }
 
     // Формируем запрос с Gzip-данными
     req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(compressedData))
     if err != nil {
-        a.handleErrorAndContinue("формирования запроса", err)
+        a.HandleErrorAndContinue("формирования запроса", err)
         return
     }
 
@@ -46,13 +46,13 @@ func (a *Agent) sendSingleMetric(metric interface{}, metricID string, checkRequi
     // Выполняем запрос
     resp, err := a.client.Do(req)
     if err != nil {
-        a.handleErrorAndContinue("отправки метрики", err)
+        a.HandleErrorAndContinue("Ошибка отправки метрики", err)
         return
     }
 
     // Обрабатываем ответ
-    if err := a.handleResponse(resp); err != nil {
-        a.handleErrorAndContinue("обработки ответа", err)
+    if err := a.HandleResponse(resp); err != nil {
+        a.HandleErrorAndContinue("Ошибка обработки ответа", err)
     }
 }
 

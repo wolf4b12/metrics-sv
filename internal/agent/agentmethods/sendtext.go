@@ -9,7 +9,7 @@ import (
 )
 
 // sendSingleTextMetric отправляет одну метрику в текстовом формате
-func (a *Agent) sendSingleTextMetric(
+func (a *Agent) SendSingleTextMetric(
 	urlPath string,
 	payload string,
 	metricID string,
@@ -21,16 +21,16 @@ func (a *Agent) sendSingleTextMetric(
 	}
 
 	// Сжимаем payload
-	compressedData, err := a.compressPayload([]byte(payload))
+	compressedData, err := a.CompressPayload([]byte(payload))
 	if err != nil {
-		a.handleErrorAndContinue("сжатия URL", err)
+		a.HandleErrorAndContinue("сжатия URL", err)
 		return
 	}
 
 	// Формируем POST-запрос с Gzip-данными
 	req, err := http.NewRequest(http.MethodPost, urlPath, bytes.NewBuffer(compressedData))
 	if err != nil {
-		a.handleErrorAndContinue("формирования запроса", err)
+		a.HandleErrorAndContinue("формирования запроса", err)
 		return
 	}
 
@@ -40,13 +40,13 @@ func (a *Agent) sendSingleTextMetric(
 	// Выполняем запрос
 	resp, err := a.client.Do(req)
 	if err != nil {
-		a.handleErrorAndContinue("отправки метрики", err)
+		a.HandleErrorAndContinue("отправки метрики", err)
 		return
 	}
 
 	// Обрабатываем ответ
-	if err := a.handleResponse(resp); err != nil {
-		a.handleErrorAndContinue("обработки ответа", err)
+	if err := a.HandleResponse(resp); err != nil {
+		a.HandleErrorAndContinue("обработки ответа", err)
 	}
 }
 
@@ -58,7 +58,7 @@ func (a *Agent) SendTextCollectedMetrics() {
 		baseURL := fmt.Sprintf("http://%s/update", a.addr)
 
 		for _, gauge := range a.Gauges {
-			a.sendSingleTextMetric(
+			a.SendSingleTextMetric(
 				baseURL+"/gauge",
 				fmt.Sprintf("%s/gauge/%s/%f", baseURL, gauge.ID, *(gauge.Value)),
 				gauge.ID,
@@ -67,7 +67,7 @@ func (a *Agent) SendTextCollectedMetrics() {
 		}
 
 		for _, counter := range a.Counters {
-			a.sendSingleTextMetric(
+			a.SendSingleTextMetric(
 				baseURL+"/counter",
 				fmt.Sprintf("%s/counter/%s/%d", baseURL, counter.ID, *(counter.Delta)),
 				counter.ID,
