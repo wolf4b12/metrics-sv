@@ -18,7 +18,7 @@ func main() {
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
 
-    agent.StartCollectingMetrics(ctx)
+    agent.StartCollectingMetrics()
     agent.SendJSONCollectedMetrics()
     agent.SendTextCollectedMetrics()
     agent.CollectAndSendBatches(ctx)
