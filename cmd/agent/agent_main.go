@@ -23,5 +23,6 @@ func main() {
    go agent.SendTextCollectedMetrics()
     agent.CollectAndSendBatches(ctx)
 
-    select {} // Keep main goroutine alive
+    select {} // Keep main goroutine alive 
+    
 }
