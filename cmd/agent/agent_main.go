@@ -21,7 +21,7 @@ func main() {
    go agent.StartCollectingMetrics(ctx)
    agent.SendJSONCollectedMetrics()
    agent.SendTextCollectedMetrics()
-   agent.CollectAndSendBatches()
+   go agent.CollectAndSendBatches(ctx)
 
     select {} // Keep main goroutine alive 
 
