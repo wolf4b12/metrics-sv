@@ -10,8 +10,7 @@ import (
 
 )
 
-// sendSingleMetric отправляет одну метрику в формате JSON
-func (a *Agent) sendBatch(batch []metrics.Metrics) {
+func (a *Agent) SendBatch(batch []metrics.Metrics) {
     if len(batch) == 0 {
         return // Нет смысла отправлять пустой батч
     }
@@ -74,7 +73,7 @@ func (a *Agent) CollectAndSendBatches() {
         a.mu.Unlock()
 
         // Отправляем пакет
-        a.sendBatch(batch)
+        a.SendBatch(batch)
 
         // Пауза между отправками
         time.Sleep(a.reportInterval)

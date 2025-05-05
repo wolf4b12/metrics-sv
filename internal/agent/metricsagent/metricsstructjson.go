@@ -22,6 +22,11 @@ type Metric interface {
     MarshalJSON() ([]byte, error)
 }
 
+type BatchMetrics struct {
+    Metrics []Metrics `json:"metrics"`
+}
+
+
 
 // Метод интерфейса для идентификации метрики
 func (m *Metrics) GetID() string { return m.ID }

@@ -21,6 +21,8 @@ go   agent.StartCollectingMetrics()
 go  agent.SendJSONCollectedMetrics()
 
 go   agent.SendTextCollectedMetrics()
+
+go   agent.SendBatch()
     
 
 
