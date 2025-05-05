@@ -1,6 +1,7 @@
 package agentmethods
 
 import (
+    "context"
     "runtime"
     "time"
 
@@ -10,14 +11,20 @@ import (
 // Агент собирает метрики с определенной частотой
 
 // Метод для начала непрерывного сбора метрик
-func (a *Agent) StartCollectingMetrics() {
+func (a *Agent) StartCollectingMetrics(ctx context.Context) {
     ticker := time.NewTicker(a.pollInterval)
     defer ticker.Stop()
 
-    for range ticker.C {
-        a.collectMetricsOnce()
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case <-ticker.C:
+            a.collectMetricsOnce()
+        }
     }
 }
+
 
 // Внутренний метод для однократного сбора метрик
 func (a *Agent) collectMetricsOnce() {
