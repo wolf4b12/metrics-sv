@@ -29,11 +29,7 @@ func main() {
         defer globalMu.Unlock()
         agent.SendJSONCollectedMetrics()
     }
-    sendTextMetrics := func() {
-        globalMu.Lock()
-        defer globalMu.Unlock()
-        agent.SendTextCollectedMetrics()
-    }
+
     sendBatches := func() {
         globalMu.Lock()
         defer globalMu.Unlock()
@@ -43,7 +39,7 @@ func main() {
     // Горутины с безопасным доступом к общему ресурсу
     go collectMetrics()
     go sendJSONMetrics()
-    go sendTextMetrics()
+    go agent.SendTextCollectedMetrics()
     go sendBatches()
 
     // Основной поток ждет бесконечно
