@@ -22,7 +22,7 @@ go  agent.SendJSONCollectedMetrics()
 
 go   agent.SendTextCollectedMetrics()
 
-go   agent.SendBatch()
+go   agent.CollectAndSendBatches()
     
 
 
